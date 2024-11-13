@@ -17,7 +17,7 @@ int main() {
     do {
         system("cls");
 
-        cout << "1. Customer\n2. Admin\n3. Exit" << endl << endl;
+        cout << "1. Customer\n2. View Customer\n3. Exit" << endl << endl;
         cout << "Please enter your choice: ";
 
         while (true) {
