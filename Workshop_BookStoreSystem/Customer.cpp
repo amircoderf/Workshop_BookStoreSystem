@@ -1,7 +1,6 @@
 #include "Customer.h"
 using namespace std;
 
-
 void Customer::Customer_SignIn(MYSQL* conn) {
     system("cls");
     cout << "Customer Sign In" << endl;

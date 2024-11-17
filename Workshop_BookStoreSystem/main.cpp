@@ -2,7 +2,7 @@
 #include <cstring>
 #include <iomanip>
 #include <conio.h>
-#include "SharedFunc.cpp"
+#include "SharedFunc.h"
 #include "Customer.h"
 #include "Admin.h"
 #include "DBConnection.h"
@@ -118,7 +118,6 @@ void LogIn(MYSQL* conn) {
             }
             else {
                 cout << "Password is wrong. Please try again." << endl;
-                _getch();
             }
         }
 
@@ -147,7 +146,7 @@ void LogIn(MYSQL* conn) {
         string role = dbConn.row[0];  
 
         if (role == "admin") {
-            admin.AdminInterface(conn,username);
+            admin.AdminInterface(conn);
         }
         else if (role == "customer") {
             cout << "Welcome,"<<username<< endl;

@@ -1,5 +1,4 @@
 #include "DBConnection.h"
-#include <iostream>
 
 void db_connection::ConnectionFunction() {
     conn = mysql_init(0);

@@ -2,7 +2,7 @@
 #define CUSTOMER_H
 
 #include "DBConnection.h"
-#include "SharedFunc.cpp"
+#include "SharedFunc.h"
 #include <iomanip>
 #include <conio.h>
 #include <string>

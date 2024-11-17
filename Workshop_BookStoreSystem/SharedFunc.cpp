@@ -1,8 +1,4 @@
-#include <iostream>
-#include <conio.h>
-#include <cctype>
-
-using namespace std;
+#include "SharedFunc.h"
 
 bool isNumeric(const string& str) {
     for (char c : str) {

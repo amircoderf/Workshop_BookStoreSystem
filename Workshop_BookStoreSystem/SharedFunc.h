@@ -1,8 +1,9 @@
-#ifndef UTILS_H
-#define UTILS_H
-
+#ifndef SHAREDFUNC_H
+#define SHAREDFUNC_H
 
 #include <iostream>
+#include <conio.h>
+#include <cctype>
 
 using namespace std;
 
@@ -11,7 +12,3 @@ bool isNumeric(const string& str);
 string getHiddenInput();
 
 #endif
-
-
-
-
