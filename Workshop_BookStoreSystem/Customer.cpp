@@ -45,7 +45,7 @@ void Customer::Customer_SignIn(MYSQL* conn) {
     cout << "Password: ";
     getline(cin, cus_password);//check 2 times,adjust later
 
-    string insert_query = "INSERT INTO CUSTOMER(Name, IC_no, Phone_no, Address, cus_username, cus_password) ""VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address + "', '" + cus_username + "', '" + cus_password + "')";
+    string insert_query = "INSERT INTO CUSTOMER(Name, IC_no, Phone_no, Address, cus_username, cus_password,Role) ""VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address + "', '" + cus_username + "', '" + cus_password + "')";
     const char* q = insert_query.c_str();
 
     int qstate = mysql_query(conn, q);
@@ -57,7 +57,6 @@ void Customer::Customer_SignIn(MYSQL* conn) {
         cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
     }
     _getch();
-    CustomerInterface(conn);
 }
 
 void Customer::View_Customer(MYSQL* conn) {
@@ -84,107 +83,6 @@ void Customer::View_Customer(MYSQL* conn) {
     _getch();
 }
 
-void Customer::Customer_LogIn(MYSQL* conn) {
-    while (true) {
-        cout << "Username: ";
-        cin >> cus_username;
 
 
-        string query = "SELECT * FROM CUSTOMER WHERE cus_username = '" + cus_username + "'";
-        const char* q = query.c_str();
-        int qstate = mysql_query(conn, q);
-
-        if (qstate) {
-            cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-            _getch();
-            return;
-        }
-
-        //store the result in res
-        dbConn.res = mysql_store_result(conn);
-        if (!dbConn.res) {
-            cerr << "Query Execution Problem!Error Code:  " << mysql_error(conn) <<endl;
-            return;
-        }
-
-        if (mysql_num_rows(dbConn.res) == 1) {
-            break;
-        }
-        else {
-            cout << "Username does not exist. Please try again.";
-            _getch();
-            system("cls");
-        }        
-    }
-
-    while (true) {
-        system("cls");
-        cout << "Username: " << cus_username << endl;
-        cout << "Password: ";
-        cin >> cus_password;
-
-
-        string query = "SELECT * FROM CUSTOMER WHERE cus_username = '" + cus_username + "' AND cus_password = '" + cus_password + "'";
-        const char* q = query.c_str();
-        int qstate = mysql_query(conn, q);
-
-        if (qstate) {
-            cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-            _getch();
-            return;
-        }
-
-        //store the result in res
-        dbConn.res = mysql_store_result(conn);
-        if (!dbConn.res) {
-            cerr << "Query Execution Problem!Error Code:  " << mysql_error(conn) << endl;
-            return;
-        }
-
-        if (mysql_num_rows(dbConn.res) == 1) {
-            break;
-        }
-        else {
-            cout << "Password is wrong. Please try again." << std::endl;
-            _getch();
-        }
-
-        cout << "In prgoress.......";
-        _getch();
-        return;
-    }
-}
-
-void Customer::CustomerInterface(MYSQL* conn) {
-    system("cls");
-    int choice;
-    cout << "1.Sign in\n2.Log in\n3.Back" << endl;
-    cout << "Please enter your choice:";
-
-    while (true) {
-        if (!(cin >> choice)) {
-            cout << "Invalid input. Please enter a number between 1 and 3: ";
-            cin.clear();
-            cin.ignore(1000, '\n');
-        }
-        else if (choice < 1 || choice > 3) {
-            cout << "Invalid choice. Please enter a number between 1 and 3: ";
-        }
-        else {
-            break;
-        }
-    }
-
-    if (choice == 1) {
-        system("cls");
-        Customer_SignIn(conn);
-    }
-    else if (choice == 2) {
-        system("cls");
-        Customer_LogIn(conn);
-    }
-    else {
-        return;
-    }
-}
 

@@ -22,6 +22,7 @@
     <ClCompile Include="Customer.cpp" />
     <ClCompile Include="DBConnection.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Utill.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
