@@ -1,8 +1,11 @@
 #ifndef CUSTOMER_H
 #define CUSTOMER_H
 
-#include <string>
 #include "DBConnection.h"
+#include "SharedFunc.cpp"
+#include <iomanip>
+#include <conio.h>
+#include <string>
 using namespace std;
 
 class Customer {

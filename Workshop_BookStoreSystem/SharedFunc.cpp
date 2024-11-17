@@ -1,4 +1,3 @@
-#include "Util.h"
 #include <iostream>
 #include <conio.h>
 #include <cctype>
@@ -14,20 +13,21 @@ bool isNumeric(const string& str) {
     return true;
 }
 
+
 string getHiddenInput() {
     string input;
     char ch;
 
-    while ((ch = _getch()) != '\r') { // Read until Enter is pressed
-        if (ch == '\b') { // Handle backspace
+    while ((ch = _getch()) != '\r') { // Read until Enter(\r) is pressed
+        if (ch == '\b') { 
             if (!input.empty()) {
-                cout << "\b \b"; // Remove character from console
+                cout << "\b \b"; // Remove character from output
                 input.pop_back(); // Remove last character from string
             }
         }
         else {
             input.push_back(ch);
-            cout << '*'; // Display * for each character
+            cout << '*'; 
         }
     }
     cout << endl;

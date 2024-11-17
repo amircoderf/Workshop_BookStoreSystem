@@ -19,10 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Admin.cpp" />
     <ClCompile Include="Customer.cpp" />
     <ClCompile Include="DBConnection.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Utill.cpp" />
+    <ClCompile Include="SharedFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -31,7 +32,7 @@
     <ClInclude Include="Admin.h" />
     <ClInclude Include="Customer.h" />
     <ClInclude Include="DBConnection.h" />
-    <ClInclude Include="Util.h" />
+    <ClInclude Include="SharedFunc.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

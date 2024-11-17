@@ -18,11 +18,6 @@ void db_connection::ConnectionFunction() {
     this_thread::sleep_for(seconds(1));
 }
 
-
-MYSQL* db_connection::GetConnection() {
-    return conn;
-}
-
 //close the connection
 void db_connection::CloseConnection() {
     if (conn) {

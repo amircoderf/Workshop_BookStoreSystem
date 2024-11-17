@@ -2,8 +2,9 @@
 #include <cstring>
 #include <iomanip>
 #include <conio.h>
-#include "Util.h"
+#include "SharedFunc.cpp"
 #include "Customer.h"
+#include "Admin.h"
 #include "DBConnection.h"
 
 using namespace std;
@@ -11,12 +12,12 @@ using namespace std;
 //object decalaration
 db_connection dbConn;
 Customer customer;
+Admin admin;
 
 void LogIn(MYSQL* conn);
 
 int main() {
     dbConn.ConnectionFunction(); 
-
     int choice;
 
     do {
@@ -146,13 +147,13 @@ void LogIn(MYSQL* conn) {
         string role = dbConn.row[0];  
 
         if (role == "admin") {
-            cout << "Welcome, Admin " <<username<< endl;
+            admin.AdminInterface(conn,username);
         }
         else if (role == "customer") {
             cout << "Welcome,"<<username<< endl;
         }
         else {
-            cout << "Unknown role." << endl;
+            cout << "Unknown role.Please contact the administrator for further instructions." << endl;
             _getch();
             return;
         }

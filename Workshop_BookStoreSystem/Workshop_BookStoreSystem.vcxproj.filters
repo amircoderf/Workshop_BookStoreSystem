@@ -24,7 +24,10 @@
     <ClCompile Include="DBConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Utill.cpp">
+    <ClCompile Include="SharedFunc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Admin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,7 +41,7 @@
     <ClInclude Include="Customer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Util.h">
+    <ClInclude Include="SharedFunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Admin.h">
