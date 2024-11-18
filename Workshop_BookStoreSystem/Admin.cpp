@@ -3,8 +3,8 @@
 void Admin::AdminInterface(MYSQL* conn) {
     system("cls");
 	int choice;
-	cout << "Welcome, Admin " <<endl<<endl;
-	cout << "1.Add Books\n2.Update Books\n3.Delete Books\n4.View Customer Information\n5.View Sales Report" << endl<<endl;
+	cout << "Welcome, ADMIN " <<endl<<endl;
+	cout << "1.Add Books\n2.Update Books\n3.Delete Books\n4.View Customer Information\n5.View Sales Report\n0.Exit" << endl<<endl;
 	cout << "What would you like to do? ";
 
     while (true) {
@@ -13,7 +13,7 @@ void Admin::AdminInterface(MYSQL* conn) {
             cin.clear();
             cin.ignore(10000, '\n');
         }
-        else if (choice < 1 || choice > 5) {
+        else if (choice < 0 || choice > 5) {
             cout << "Invalid input. Please enter a number between 1 and 5: ";
         }
         else {
@@ -22,6 +22,8 @@ void Admin::AdminInterface(MYSQL* conn) {
     }
 
     switch (choice) {
+    case 0:
+        return;
     case 1:
         AddBooks(conn);
         break;
@@ -37,85 +39,89 @@ void Admin::AdminInterface(MYSQL* conn) {
     case 5:
         SalesReport(conn);
         break;
-    deafult:
+    default:
         break;
     }
 }
 
 void Admin::AddBooks(MYSQL* conn) {
-    string isbn, title, genre, author, publisher, publishedYear,price,stock;
+    string isbn, title, author, publisher, publishedYear;
+    double price;
+    int stock;
 
     do {
         system("cls");
 
+        // ISBN Input
         while (true) {
             cout << "ISBN: ";
             cin >> isbn;
-
             if (isNumeric(isbn)) {
                 break;
             }
             cout << "Invalid input. Please enter only numbers for ISBN." << endl;
         }
 
+        // Title Input
         cout << "Title of the book: ";
         cin.ignore();
         getline(cin, title);
 
+        // Price Input
         while (true) {
-            cout << "Price of the book: RM ";
+            cout << "Price of the book (RM): ";
             cin >> price;
 
-            if (isNumeric(price)) {
+            if (!cin.fail() && price >= 0) {
                 break;
             }
-            cout << "Invalid input. Please enter the correct price." << endl;
+            cin.clear(); 
+            cin.ignore(); 
+            cout << "Invalid input. Please enter a valid price." << endl;
         }
 
+        // Stock Input
         while (true) {
-            cout << "Stocks:  ";
+            cout << "Stock: ";
             cin >> stock;
 
-            if (isNumeric(stock)) {
+            if (!cin.fail() && stock >= 0) {
                 break;
             }
-            cout << "Invalid input. Please enter the correct price." << endl;
+            cin.clear();
+            cin.ignore();
+            cout << "Invalid input. Please enter a valid stock value." << endl;
         }
-
-        cout << "Genre: ";
-        cin >> genre;
 
         cout << "Author of the book: ";
         cin.ignore();
         getline(cin, author);
 
         cout << "Publisher of the book: ";
-        cin.ignore();
         getline(cin, publisher);
 
         while (true) {
             cout << "Published Year: ";
             cin >> publishedYear;
 
-            if (isNumeric(publishedYear)) {
+            if (isNumeric(publishedYear) && publishedYear.length() == 4) {
                 break;
             }
-            cout << "Please enter the correct published year." << endl;
+            cout << "Invalid input. Please enter a valid 4-digit year." << endl;
         }
 
 
-        string insert_query = "INSERT INTO BOOK(ISBN, Title, Price,Stock, Genre, Author, Publisher, PublishedYear) "
-                              "VALUES('" + isbn + "','" + title + "'," + price +","+stock+ ",'" + genre + "','" + author + "','" + publisher + "','" + publishedYear + "')";
+        string insert_query ="INSERT INTO BOOK (ISBN, Title, Price, Stock, Author, Publisher, PublishedYear) "
+                             "VALUES ('" + isbn + "', '" + title + "', " + to_string(price) + ", " + to_string(stock) + ", '" + author + "', '" + publisher + "', '" + publishedYear + "')";
 
-        const char* q = insert_query.c_str();
-        int qstate = mysql_query(conn, q); 
 
-        if (!qstate) {
-            cout << endl << "Book has been successfully added to the database." << endl;
+        if (mysql_query(conn, insert_query.c_str()) == 0) {
+            cout << "\nBook has been successfully added to the database." << endl;
         }
         else {
-            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
         }
+
 
         char choice;
         cout << "Do you want to input another book? (y/n): ";
@@ -126,58 +132,41 @@ void Admin::AddBooks(MYSQL* conn) {
         }
 
     } while (true);
+
     AdminInterface(conn);
 }
 
 void Admin::UpdateBooks(MYSQL* conn) {
-    cout << "soon";
-    _getch();
+    DisplayBooks(conn);
+
+
 }
 
+
 void Admin::DeleteBooks(MYSQL* conn) {
-    int bookNumber;
+    int bookid;
 
     while (true) {
         system("cls");
         DisplayBooks(conn);
-        cout << "Enter the number of the book you want to delete (0 to quit): ";
-        cin >> bookNumber;
+        cout << "\nEnter the book ID of the book you want to delete (0 to quit): ";
+        cin >> bookid;
 
         // Exit the loop if the user inputs 0
-        if (bookNumber == 0) {
+        if (bookid == 0) {
             AdminInterface(conn);
         }
 
-        // Query to get the title of the selected book by book number
-        string query = "SELECT TITLE FROM BOOK LIMIT 1 OFFSET " + to_string(bookNumber - 1);
-        const char* q = query.c_str();
-
-        dbConn.res = mysql_store_result(conn);
-        if (dbConn.res == NULL) {
-            cout << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
-            return;
-        }
-
-
-        dbConn.row = mysql_fetch_row(dbConn.res);
-        if (dbConn.row == NULL) {
-            cout << "Invalid book number." << endl;
-            mysql_free_result(dbConn.res);
-            continue; //loop again ,ignore others
-        }
-
-        string Title = dbConn.row[0];
-        mysql_free_result(dbConn.res);
-
-        string delete_query = "DELETE FROM BOOK WHERE TITLE = '" + Title + "'";
+        string delete_query = "DELETE FROM BOOK WHERE BookID = " + to_string(bookid);
         const char* deleteQ = delete_query.c_str();
 
         if (!mysql_query(conn, deleteQ)) {
-            cout << "Book with Title " << Title << " has been successfully deleted from the database." << endl;
+            cout << "Book with book ID " << to_string(bookid) << " has been successfully deleted from the database." << endl;
             _getch();
         }
         else {
             cout << "Error deleting book. Error Code: " << mysql_errno(conn) << endl;
+            _getch();
         }
     }
 }
@@ -220,11 +209,13 @@ void Admin::ViewCustomer(MYSQL* conn) {
 
     cout << "\nPress Enter To Go Back...";
     _getch();
+    AdminInterface(conn);
 }
 
 
 void Admin::DisplayBooks(MYSQL* conn) {
-    string query = "SELECT Title FROM BOOK"; 
+    system("cls");
+    string query = "SELECT BookID, Title FROM BOOK";
     const char* q = query.c_str();
 
     if (mysql_query(conn, q)) {
@@ -239,10 +230,9 @@ void Admin::DisplayBooks(MYSQL* conn) {
     }
 
     dbConn.row;
-    int count = 1;
     cout << "Books in the database:" << endl;
+
     while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
-        cout << count << ".Title: " << dbConn.row[0] << endl;
-        count++;
+        cout << "Book ID: " << dbConn.row[0] << ", Title: " << dbConn.row[1] << endl;
     }
 }

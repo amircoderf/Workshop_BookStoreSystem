@@ -66,53 +66,30 @@ void LogIn(MYSQL* conn) {
         cout << "Username: ";
         cin >> username;
 
-        // Check if the username exists
-        string query = "SELECT * FROM User WHERE username = '" + username + "'";
-        const char* q = query.c_str();
-        qstate = mysql_query(conn, q);
-
-        if (qstate) {
+        // Check username and retrieve password and role
+        string query = "SELECT password, Role FROM User WHERE username = '" + username + "'";
+        if (mysql_query(conn, query.c_str())) {
             cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
             _getch();
-            break;
+            continue;
         }
 
         dbConn.res = mysql_store_result(conn);
-        if (!dbConn.res) {
-            cerr << "Result Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-            _getch();
-            break;
-        }
-
-        if (mysql_num_rows(dbConn.res) == 0) {
+        if (!dbConn.res || mysql_num_rows(dbConn.res) == 0) {
             cout << "Username does not exist. Please try again." << endl;
             _getch();
-            continue; 
+            continue;
         }
 
-        // Username found, now check the password
+        dbConn.row = mysql_fetch_row(dbConn.res);
+        string correctPassword = dbConn.row[0];
+        string role = dbConn.row[1];
+
         while (true) {
             cout << "Password: ";
             password = getHiddenInput();
 
-            query = "SELECT * FROM User WHERE username = '" + username + "' AND password = '" + password + "'";
-            const char* q = query.c_str();
-            qstate = mysql_query(conn, q);
-
-            if (qstate) {
-                cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-                _getch();
-                break;
-            }
-
-            dbConn.res = mysql_store_result(conn);
-            if (!dbConn.res) {
-                cerr << "Result Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-                _getch();
-                break;
-            }
-
-            if (mysql_num_rows(dbConn.res) == 1) {
+            if (password == correctPassword) {
                 loginSuccessful = true;
                 break;
             }
@@ -121,45 +98,20 @@ void LogIn(MYSQL* conn) {
             }
         }
 
-        if (loginSuccessful)
-            break; // Exit login loop
-    }
-
-    // Check role after successful login
-    query = "SELECT Role FROM User WHERE username = '" + username + "'";  // Query for Role
-    const char* q = query.c_str();
-    qstate = mysql_query(conn, q);
-
-    if (qstate) {
-        cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-        return;
-    }
-
-    dbConn.res = mysql_store_result(conn);
-    if (dbConn.res == NULL) {
-        cerr << "Result Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-        return;
-    }
-
-    dbConn.row = mysql_fetch_row(dbConn.res);
-    if (dbConn.row) {
-        string role = dbConn.row[0];  
-
-        if (role == "admin") {
-            admin.AdminInterface(conn);
-        }
-        else if (role == "customer") {
-            cout << "Welcome,"<<username<< endl;
-        }
-        else {
-            cout << "Unknown role.Please contact the administrator for further instructions." << endl;
-            _getch();
-            return;
+        if (loginSuccessful) {
+            if (role == "admin") {
+                admin.AdminInterface(conn);
+            }
+            else if (role == "customer") {
+                cout << "Welcome, " << username << "!" << endl;
+            }
+            else {
+                cout << "Unknown role. Please contact the administrator." << endl;
+            }
+            break;
         }
     }
-    else {
-        cout << "Username not found." << endl;
-    }
+
 }
 
 
