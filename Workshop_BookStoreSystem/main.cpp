@@ -40,7 +40,7 @@ int main() {
         }
 
         if (choice == 1) {
-            customer.Customer_SignIn(dbConn.conn);
+            customer.CustomerRegistration(dbConn.conn);
         }
 
         else if (choice == 2) {
@@ -58,7 +58,6 @@ int main() {
 void LogIn(MYSQL* conn) {
     string username, password,query;
     int qstate;
-    bool loginSuccessful = false;
 
     while (true) {
         system("cls");
@@ -71,34 +70,29 @@ void LogIn(MYSQL* conn) {
         if (mysql_query(conn, query.c_str())) {
             cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
             _getch();
-            continue;
+            return;
         }
 
         dbConn.res = mysql_store_result(conn);
-        if (!dbConn.res || mysql_num_rows(dbConn.res) == 0) {
-            cout << "Username does not exist. Please try again." << endl;
-            _getch();
-            continue;
+
+        string correctPassword, role;
+        bool userExists = false;
+
+        if (dbConn.res && mysql_num_rows(dbConn.res) > 0) {
+            dbConn.row = mysql_fetch_row(dbConn.res);
+            correctPassword = dbConn.row[0]; // Retrieve password
+            role = dbConn.row[1];           // Retrieve role
+            userExists = true;
         }
 
-        dbConn.row = mysql_fetch_row(dbConn.res);
-        string correctPassword = dbConn.row[0];
-        string role = dbConn.row[1];
+        // Always ask for the password regardless of username existence
+        cout << "Password: ";
+        password = getHiddenInput();
 
-        while (true) {
-            cout << "Password: ";
-            password = getHiddenInput();
+        // Validate login credentials
+        if (userExists && password == correctPassword) {
 
-            if (password == correctPassword) {
-                loginSuccessful = true;
-                break;
-            }
-            else {
-                cout << "Password is wrong. Please try again." << endl;
-            }
-        }
-
-        if (loginSuccessful) {
+            // Redirect user based on role
             if (role == "admin") {
                 admin.AdminInterface(conn);
             }
@@ -108,11 +102,20 @@ void LogIn(MYSQL* conn) {
             else {
                 cout << "Unknown role. Please contact the administrator." << endl;
             }
-            break;
+
+            break;//break the while loop without speciying whether it's true or nor
+        }
+
+        else {
+            setConsoleTextColor(12); // 12 is the color code for red text
+            cout << "\nYou have entered an invalid username or password." << endl;
+            setConsoleTextColor(7); // Reset to default (7 is the standard console text color)
+            _getch();
         }
     }
 
 }
+
 
 
 

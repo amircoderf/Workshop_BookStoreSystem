@@ -14,8 +14,7 @@ private:
     string ic_no, phone_no, name, address, cus_username, cus_password;
 
 public:
-    void Customer_SignIn(MYSQL* conn);
-    void View_Customer(MYSQL* conn);//this is for admin,test it on customer header file for now(change later)
+    void CustomerRegistration(MYSQL* conn);
 };
 
 #endif

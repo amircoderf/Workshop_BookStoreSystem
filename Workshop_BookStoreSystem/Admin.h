@@ -17,11 +17,12 @@ private:
 public:
 	void AdminInterface(MYSQL* conn);
 	void AddBooks(MYSQL* conn);
-	void UpdateBooks(MYSQL* conn);
+	void UpdateBooks(MYSQL* conn,const string& bookid);
 	void DeleteBooks(MYSQL* conn);
 	void ViewCustomer(MYSQL* conn);
 	void SalesReport(MYSQL* conn);
-	void DisplayBooks(MYSQL* conn);
+	bool DisplayBooks(MYSQL* conn);
+	void SearchBooks(MYSQL* conn);
 };
 
 
