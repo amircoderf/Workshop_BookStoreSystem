@@ -15,6 +15,9 @@ private:
 
 public:
     void CustomerRegistration(MYSQL* conn);
+    void CustomerInteface(MYSQL* conn);
+    void ViewBooks(MYSQL* conn);
+    void OrderCart(MYSQL* conn);
 };
 
 #endif

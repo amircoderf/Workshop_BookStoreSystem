@@ -2,12 +2,12 @@
 
 void Admin::AdminInterface(MYSQL* conn) {
     string bookid;
-	int choice;
+    int choice;
 
     do {
         system("cls");
         cout << "Welcome, ADMIN " << endl << endl;
-        cout << "1.Add Books\n2.Update Books\n3.Delete Books\n4.View Customer Information\n5.Search Books\n6.Sales Report\n0.Exit" << endl << endl;
+        cout << "1. Add Books\n2. Update Books\n3. Delete Books\n4. View Customer Information\n5. Search Books\n6. Sales Report\n0. Exit" << endl << endl;
         cout << "What would you like to do? ";
 
         // Input validation for menu choice
@@ -66,9 +66,8 @@ void Admin::AdminInterface(MYSQL* conn) {
 
                 if (bookCount > 0) {
                     system("cls");
-                    // Call UpdateBooks with the valid BookID
                     UpdateBooks(conn, bookid);
-                    break; // Exit the loop after a successful update
+                    break; 
                 }
                 else {
                     cout << "Error: No book found with the BookID '" << bookid << "'. Please try again." << endl;
@@ -77,22 +76,66 @@ void Admin::AdminInterface(MYSQL* conn) {
             }
             break;
         case 3:
-            DeleteBooks(conn);  
+            // Option to select a book and delete
+            cout << "To delete a book, you need to select one." << endl;
+            // Display all books
+            if (!DisplayBooks(conn)) {
+                cout << "No books available to delete." << endl;
+                break; // Exit if there are no books in the database
+            }
+
+            while (true) {
+                cout << "Enter the BookID of the book you want to delete (or type '0' to cancel): ";
+                cin >> bookid;
+
+                if (bookid == "0") { // Allow user to cancel
+                    cout << "Delete operation canceled." << endl;
+                    break;
+                }
+
+                // Check if the BookID exists
+                string checkQuery = "SELECT COUNT(*) FROM book WHERE BookID = '" + bookid + "'";
+                if (mysql_query(conn, checkQuery.c_str())) {
+                    cerr << "Error checking BookID: " << mysql_error(conn) << endl;
+                    break;
+                }
+
+                MYSQL_RES* res = mysql_store_result(conn);
+                if (res == nullptr) {
+                    cerr << "Error fetching result: " << mysql_error(conn) << endl;
+                    break;
+                }
+
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int bookCount = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+
+                if (bookCount > 0) {
+                    system("cls");
+                    DeleteBooks(conn, bookid);
+                    break; // Exit the loop after a successful delete
+                }
+                else {
+                    cout << "Error: No book found with the BookID '" << bookid << "'. Please try again." << endl;
+                    cout << "------------------------------------------------------------------------------------" << endl;
+                }
+            }
             break;
         case 4:
-            ViewCustomer(conn); 
+            ViewCustomer(conn);
             break;
         case 5:
-            SearchBooks(conn); 
+            SearchBooks(conn);
             break;
         case 6:
-            SalesReport(conn); 
+            SalesReport(conn);
             break;
         default:
             break;
         }
-    } while (choice != 0);  
+    } while (choice != 0);
 }
+
 
 void Admin::AddBooks(MYSQL* conn) {
     string isbn, title, author, publisher, publishedYear;
@@ -196,6 +239,7 @@ void Admin::AddBooks(MYSQL* conn) {
 }
 
 void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
+    system("cls");
     string newValue;
     int fieldChoice;
     string choice;
@@ -234,7 +278,6 @@ void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
     mysql_free_result(res);
 
     do {
-        // Input validation loop
         while (true) {
             cout << "\nSelect the field you want to update or enter 0 to quit:" << endl;
             cout << "1. Title" << endl;
@@ -249,7 +292,7 @@ void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
             if (cin.fail() || fieldChoice < 0 || fieldChoice > 6) {
                 cin.clear();  // Clear input error flags
                 cin.ignore(1000, '\n');  // Discard invalid input
-                cerr << "Invalid input. Please enter a number between 0 and 6." << endl;
+                cerr << "Invalid input. Please enter a number between 0 and 6." << endl<<endl;
             }
             else {
                 break;  // Valid input
@@ -271,27 +314,68 @@ void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
         case 6: field = "PublishedYear"; break;
         }
 
-        cout << "Enter the new value for " << field << " (or type '/quit' to cancel): ";
-        cin.ignore(); 
-        getline(cin, newValue);
+        // Handle input for the selected field
+        while (true) {
+            cout << "Enter the new value for " << field << " (or press Enter to cancel): ";
+            cin.ignore();
+            getline(cin, newValue);
 
-        if (newValue == "/quit") {
-            cout << "Cancelled update for this field." << endl;
-            continue;  // Go back to field selection
-        }
+            if (newValue.empty()) {
+                cout << "Cancelled update for this field." << endl;
+                break;
+            }
 
-        if (newValue.empty()) {
-            cerr << "Error: Value cannot be empty. Please try again." << endl;
-            continue;
-        }
+            // Validate Price
+            if (field == "Price") {
+                try {
+                    double price = stod(newValue); // Convert string into double
+                    stringstream stream;
+                    stream << fixed << setprecision(2) << price;
+                    if (stream.str() != newValue) {
+                        cerr << "Error: Price must be a numeric value with up to 2 decimal places. Please enter again." << endl;
+                        continue; // Ask for price again
+                    }
+                }
+                catch (const exception&) {
+                    cerr << "Error: Price must be a numeric value with up to 2 decimal places. Please enter again." << endl;
+                    continue; // Ask for price again
+                }
+            }
+            // Validate Stock and Published Year
+            else if (field == "Stock" || field == "PublishedYear") {
+                try {
+                    int number = stoi(newValue); // Convert to int
+                    if (to_string(number) != newValue) {
+                        cerr << "Error: This field must be a whole number. Please enter again." << endl;
+                        continue; // Ask for stock again
+                    }
+                }
+                catch (const std::exception&) {
+                    cerr << "Error: This field must be a whole number. Please enter again." << endl;
+                    continue; // Ask for stock again
+                }
+            }
 
-        string updateQuery = "UPDATE book SET " + field + " = '" + newValue + "' WHERE BookID = '" + bookid + "'";
+            // Confirmation step
+            cout << "You entered: " << field << " = " << newValue << ". Do you want to confirm this update? (y/n): ";
+            char confirm;
+            cin >> confirm;
 
-        if (mysql_query(conn, updateQuery.c_str()) == 0) {
-            cout << field << " updated successfully!" << endl;
-        }
-        else {
-            cerr << "Error updating book: " << mysql_error(conn) << endl;
+            if (confirm == 'y' || confirm == 'Y') {
+                string updateQuery = "UPDATE book SET " + field + " = '" + newValue + "' WHERE BookID = '" + bookid + "'";
+
+                if (mysql_query(conn, updateQuery.c_str()) == 0) {
+                    cout << field << " updated successfully!" << endl;
+                }
+                else {
+                    cerr << "Error updating book: " << mysql_error(conn) << endl;
+                }
+                break; // Exit the input loop after successful update
+            }
+            else {
+                cout << "Update for " << field << " has been cancelled." << endl;
+                continue; // Ask for the field again
+            }
         }
 
         // Ask to update another field
@@ -316,78 +400,57 @@ void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
 }
 
 
+void Admin::DeleteBooks(MYSQL* conn,const string& bookid) {
+    // Check if the book exists
+    string checkQuery = "SELECT BookID FROM book WHERE BookID = '" + bookid + "'";
+    const char* checkQ = checkQuery.c_str();
 
+    if (mysql_query(conn, checkQ)) {
+        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+        _getch();
+        return;
+    }
 
-void Admin::DeleteBooks(MYSQL* conn) {
-    int bookid;
+    MYSQL_RES* res = mysql_store_result(conn);
+    if (res == nullptr) {
+        cout << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
+        _getch();
+        return;
+    }
 
-    while (true) {
-        system("cls");
+    if (mysql_num_rows(res) == 0) {
+        cout << "No book found with the given ID: " << bookid << endl;
+        mysql_free_result(res);
+        return;
+    }
 
-        bool hasBooks = DisplayBooks(conn);  // Check if there are any books
-        if (!hasBooks) {
-            cout << "\nPress Any Key to Go Back......";
-            _getch(); 
-            return;  
+    // Free the result set as the book does exist
+    mysql_free_result(res);
+
+    char confirmation;
+    cout << "Are you sure you want to delete the book with ID " << bookid << "? (y/n): "<<endl;
+    cin >> confirmation;
+
+    if (tolower(confirmation) != 'y') {
+        cout << "Deletion canceled. Press any key to continue...\n";
+        _getch();
+        return;
+    }
+
+    string deleteQuery = "DELETE FROM book WHERE BookID = '" + bookid + "'";
+    const char* deleteQ = deleteQuery.c_str();
+
+    if (!mysql_query(conn, deleteQ)) {
+        if (mysql_affected_rows(conn) > 0) {
+            cout << "Book with BookID " << bookid << " has been successfully deleted from the database." << endl;
         }
-        cout << "\nEnter the book ID of the book you want to delete (0 to return to Admin Menu): ";
-        cin >> bookid;
-
-        //if user enters 0,return
-        if (bookid == 0) {
-            return;
-        }
-
-        // Check if the book exists
-        string checkQuery = "SELECT BookID FROM BOOK WHERE BookID = " + to_string(bookid);
-        const char* checkQ = checkQuery.c_str();
-
-        if (mysql_query(conn, checkQ)) {
-            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-            _getch();
-            return;
-        }
-
-        dbConn.res = mysql_store_result(conn);
-        if (dbConn.res == nullptr) {
-            cout << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
-            _getch();
-            return;
-        }
-
-        if (mysql_num_rows(dbConn.res) == 0) {
-            cout << "No book found with the given ID. Please try again.\n";
-            mysql_free_result(dbConn.res);
-            continue; // loop again
-        }
-
-        // Free the result set as the book does exist
-        mysql_free_result(dbConn.res);
-
-        char confirmation;
-        cout << "Are you sure you want to delete the book with ID " << bookid << "? (y/n): ";
-        cin >> confirmation;
-
-        if (tolower(confirmation) != 'y') {
-            cout << "Deletion canceled. Press any key to continue...\n";
-            _getch();
-            continue; // loop again
-        }
-
-        string deleteQuery = "DELETE FROM BOOK WHERE BookID = " + to_string(bookid);
-        const char* deleteQ = deleteQuery.c_str();
-
-        if (!mysql_query(conn, deleteQ)) {
-
-            if (mysql_affected_rows(conn) > 0) {
-                cout << "Book with book ID " << bookid << " has been successfully deleted from the database." << endl;
-            }
-        }
-
         else {
-            cout << "Error deleting book. Error Code: " << mysql_errno(conn) << endl;
-            _getch();
+            cout << "No changes made. Book might have already been deleted." << endl;
         }
+    }
+    else {
+        cout << "Error deleting book. Error Code: " << mysql_errno(conn) << endl;
+        _getch();
     }
 }
 
@@ -483,40 +546,33 @@ bool Admin::DisplayBooks(MYSQL* conn) {
     return true; // Books were found
 }
 
-
 void Admin::SearchBooks(MYSQL* conn) {
     system("cls");
     string searchValue;
     string query;
     char retryChoice;
-    int choice;
 
     while (true) {
         system("cls");
         cout << "+---------------------------------------------+" << endl;
         cout << "|                Search Books                 |" << endl;
         cout << "+---------------------------------------------+" << endl;
-        cout << "Enter search value (ID, ISBN, or Title) or 'q' to quit: ";
+        cout << "Enter search value (ID, ISBN, or Title) or '0' to quit: ";
         cin.ignore();
         getline(cin, searchValue);
 
-        // Allow user to exit anytime by typing 'q'
-        if (searchValue == "q" || searchValue == "Q") {
-            cout << "Exiting search..." << endl;
-            _getch();
+        if (searchValue == "0") {
             return;
         }
 
         if (searchValue.empty()) {
             cout << "Search value cannot be empty." << endl;
             _getch();
-            continue;  // Restart the loop to let the user try again
+            continue;
         }
 
-        // Determine if the input is numeric (ID or ISBN) or a string (Title)
         if (isdigit(searchValue[0])) {
-            // Check if it's likely an ISBN or ID
-            if (searchValue.length() == 13) { // Only 13-digit ISBN is allowed in the system
+            if (searchValue.length() == 13) {
                 query = "SELECT * FROM book WHERE ISBN = '" + searchValue + "'";
             }
             else {
@@ -544,22 +600,17 @@ void Admin::SearchBooks(MYSQL* conn) {
         if (mysql_num_rows(res) == 0) {
             cout << "No books found matching your criteria." << endl;
 
-            // Ask if they want to retry or quit
             while (true) {
-                cout << "Would you like to try again? (y/n) or press 'q' to quit: ";
+                cout << "Would you like to try again? (y/n): ";
                 cin >> retryChoice;
 
-                // Ensure retryChoice is either 'y', 'n' or 'q' for quit
-                if (retryChoice == 'y' || retryChoice == 'Y' || retryChoice == 'n' || retryChoice == 'N' || retryChoice == 'q' || retryChoice == 'Q') {
-                    break; 
+                if (retryChoice == 'y' || retryChoice == 'Y' || retryChoice == 'n' || retryChoice == 'N') {
+                    break;
                 }
-                else {
-                    cout << "Invalid input! Please enter 'y' for yes, 'n' for no, or 'q' to quit." << endl;
-                }
+                cout << "Invalid input! Please enter 'y' for yes or 'n' for no." << endl;
             }
 
-            // If they want to quit, exit the loop
-            if (retryChoice == 'n' || retryChoice == 'N' || retryChoice == 'q' || retryChoice == 'Q') {
+            if (retryChoice == 'n' || retryChoice == 'N') {
                 mysql_free_result(res);
                 cout << "Exiting search..." << endl;
                 _getch();
@@ -570,20 +621,14 @@ void Admin::SearchBooks(MYSQL* conn) {
             continue;
         }
 
-        cout << "+-----------------------------------------------------------------------------------+" << endl;
-        cout << "|                                 Search Results                                    |" << endl;
-        cout << "+-----------------------------------------------------------------------------------+" << endl;
-        int index = 1;
-        MYSQL_ROW row;
+        cout << "\n\n";
+        cout << "+---------------------------------------------------------------------------------+" << endl;
+        cout << "|                                 Search Results                                  |" << endl;
+        cout << "+---------------------------------------------------------------------------------+" << endl;
 
+        MYSQL_ROW row;
         while ((row = mysql_fetch_row(res)) != nullptr) {
-            cout << endl;
             cout << "+---------------------------------------------------------------------------------+" << endl;
-            cout << "| ";
-            setConsoleTextColor(14);
-            cout << index;
-            setConsoleTextColor(7);
-            cout << "                                                                               |"<<endl;
             cout << "| BookID        : " << row[0] << setw(65 - strlen(row[0])) << "   |" << endl;
             cout << "| ISBN          : " << row[1] << setw(65 - strlen(row[1])) << "   |" << endl;
             cout << "| Title         : " << row[2] << setw(65 - strlen(row[2])) << "   |" << endl;
@@ -591,95 +636,74 @@ void Admin::SearchBooks(MYSQL* conn) {
             cout << "| Author        : " << row[4] << setw(65 - strlen(row[4])) << "   |" << endl;
             cout << "| Publisher     : " << row[5] << setw(65 - strlen(row[5])) << "   |" << endl;
             cout << "| Published Year: " << row[6] << setw(65 - strlen(row[6])) << "   |" << endl;
-            cout << "|                                                                                 |" << endl;
             cout << "+---------------------------------------------------------------------------------+" << endl;
-            index++;
         }
-
 
         mysql_free_result(res);
 
-        // Allow user to select a book by number or quit
-        while (true) {
-            cout << "\n\nEnter the number of the book you want to manage (1-" << index - 1 << "), or press 'q' to quit: "<<endl;
-            string input;
-            cin >> input;
+        string bookId;
+        cout << "\nEnter the BookID of the book you want to manage (or '0' to quit): ";
+        cin >> bookId;
 
-            // If the user wants to quit
-            if (input == "q" || input == "Q") {
-                return;
-            }
-
-            try {
-                choice = stoi(input);
-                if (choice >= 1 && choice < index) {
-                    // Fetch the selected book's details using the index
-                    MYSQL_ROW selectedRow = nullptr;
-                    // Reset the result set cursor to the beginning
-                    mysql_data_seek(res, choice - 1); // Move to the selected row (choice - 1 because index starts at 1)
-                    selectedRow = mysql_fetch_row(res); // Fetch the selected row
-
-                    if (selectedRow) {
-                        cout << "You selected Book " << choice << ": " << selectedRow[2] << endl; // Title of the book
-
-                        // Ask what action to perform
-                        cout << "What would you like to do with this book?" << endl;
-                        cout << "1. Update Book" << endl;
-                        cout << "2. Delete Book" << endl;
-                        cout << "Enter your choice: ";
-                        int action;
-                        cin >> action;
-
-                        switch (action) {
-                        case 1:
-                            UpdateBooks(conn, selectedRow[0]);
-                            break;
-                        case 2:
-                            cout << "Delete logic for Book " << choice << endl;
-                            // Call delete function here
-                            break;
-                        case 3:
-                            cout << "Displaying more details for Book " << choice << endl;
-                            // Display more details logic here
-                            break;
-                        default:
-                            cout << "Invalid action!" << endl;
-                            break;
-                        }
-                    }
-                    else {
-                        cout << "Error fetching the selected book details." << endl;
-                    }
-                    break;  // Exit the selection loop after processing the action
-                }
-                else {
-                    cout << "Invalid number! Please enter a number between 1 and " << index - 1 << "." << endl;
-                }
-            }
-            catch (invalid_argument& e) {
-                cout << "Invalid input! Please enter a valid number or 'q' to quit." << endl;
-            }
+        if (bookId == "0") {
+            cout << "Exiting search..." << endl;
+            return;
         }
 
-        // Ask the user if they want to search again or quit
+        query = "SELECT * FROM book WHERE BookID = '" + bookId + "'";
+        if (mysql_query(conn, query.c_str())) {
+            cout << "Error fetching book details. Error Code: " << mysql_errno(conn) << endl;
+            continue;
+        }
+
+        res = mysql_store_result(conn);
+        if (res == nullptr || mysql_num_rows(res) == 0) {
+            cout << "Invalid BookID. Please try again." << endl;
+            mysql_free_result(res);
+            continue;
+        }
+
+        MYSQL_ROW selectedRow = mysql_fetch_row(res);
+        cout << "You selected Book: " << selectedRow[2] << "\n"; // Display title
+
+        cout << "What would you like to do with this book?" << endl;
+        cout << "1. Update Book" << endl;
+        cout << "2. Delete Book" << endl;
+        cout << "Enter your choice: ";
+
+        int action;
+        cin >> action;
+
+        switch (action) {
+        case 1:
+            UpdateBooks(conn, selectedRow[0]);
+            break;
+        case 2:
+            DeleteBooks(conn, selectedRow[0]);
+            break;
+        default:
+            cout << "Invalid action!" << endl;
+            break;
+        }
+
+        mysql_free_result(res);
+
         while (true) {
-            cout << "Would you like to search again? (y/n) or press 'q' to quit: ";
+            cout << "Would you like to search again? (y/n): ";
             cin >> retryChoice;
 
-            if (retryChoice == 'y' || retryChoice == 'Y' || retryChoice == 'n' || retryChoice == 'N' || retryChoice == 'q' || retryChoice == 'Q') {
+            if (retryChoice == 'y' || retryChoice == 'Y' || retryChoice == 'n' || retryChoice == 'N') {
                 break;
             }
-            else {
-                cout << "Invalid input! Please enter 'y' for yes, 'n' for no, or 'q' to quit." << endl;
-            }
+            cout << "Invalid input! Please enter 'y' for yes or 'n' for no." << endl;
         }
 
-        // If the user wants to quit, exit the loop
-        if (retryChoice == 'n' || retryChoice == 'N' || retryChoice == 'q' || retryChoice == 'Q') {
+        if (retryChoice == 'n' || retryChoice == 'N') {
             return;
         }
     }
 }
+
 
 
 

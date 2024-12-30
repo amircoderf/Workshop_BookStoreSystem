@@ -97,7 +97,7 @@ void LogIn(MYSQL* conn) {
                 admin.AdminInterface(conn);
             }
             else if (role == "customer") {
-                cout << "Welcome, " << username << "!" << endl;
+                cout << "gg";
             }
             else {
                 cout << "Unknown role. Please contact the administrator." << endl;

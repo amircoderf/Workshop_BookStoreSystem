@@ -8,6 +8,7 @@
 #include <string>
 #include <iomanip>
 #include <conio.h>
+#include <sstream>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ public:
 	void AdminInterface(MYSQL* conn);
 	void AddBooks(MYSQL* conn);
 	void UpdateBooks(MYSQL* conn,const string& bookid);
-	void DeleteBooks(MYSQL* conn);
+	void DeleteBooks(MYSQL* conn, const string& bookid);
 	void ViewCustomer(MYSQL* conn);
 	void SalesReport(MYSQL* conn);
 	bool DisplayBooks(MYSQL* conn);
