@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <conio.h>
 #include <string>
+#include <sstream>
+#include <vector>
 using namespace std;
 
 class Customer {
@@ -23,7 +25,10 @@ public:
     void searchBooks(MYSQL* conn);
     void sortBooks(MYSQL* conn);
     void confirmOrder(MYSQL* conn);
-    void removeItemFromCart(MYSQL* conn);
+    void adjustItemQuantity(MYSQL* conn);
+    void addOrUpdateBookInOrder(MYSQL* conn, int orderID, int bookID, int quantity, double price);
+    void myProfile(MYSQL* conn);
+    void viewPastOrder(MYSQL* conn);
     //update book quantity soon tm
 };
 

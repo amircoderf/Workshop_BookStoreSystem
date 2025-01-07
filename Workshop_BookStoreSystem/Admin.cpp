@@ -122,7 +122,7 @@ void Admin::AdminInterface(MYSQL* conn) {
             }
             break;
         case 4:
-            ViewCustomer(conn);
+            CustomerManagementMenu(conn);
             break;
         case 5:
             SearchBooks(conn);
@@ -135,7 +135,6 @@ void Admin::AdminInterface(MYSQL* conn) {
         }
     } while (choice != 0);
 }
-
 
 void Admin::AddBooks(MYSQL* conn) {
     string isbn, title, author, publisher, publishedYear;
@@ -456,36 +455,297 @@ void Admin::DeleteBooks(MYSQL* conn,const string& bookid) {
 
 
 void Admin::SalesReport(MYSQL* conn) {
-    cout << "soon";
+    int choice;
+
+    do {
+        system("cls");
+        cout << "\nChoose Report Type:\n";
+        cout << "1. Monthly Sales Report\n";
+        cout << "2. Total Book Sales Report\n";
+        cout << "3. Book Sales in a Month\n";
+        cout << "0. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        // Validate user input
+        if (cin.fail()) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            cout << "Invalid input. Please enter a valid number.\n";
+            _getch();
+            continue;
+        }
+
+        switch (choice) {
+        case 1:
+            MonthlySalesReport(conn);
+            break;
+        case 2:
+            BookSalesReport(conn);
+            break;
+        case 3:
+            BookSalesInMonth(conn);
+            break;
+        case 0:
+            cout << "Exiting Sales Report menu...\n";
+            break;
+        default:
+            cout << "Invalid choice. Please select a valid option.\n";
+            _getch();
+            break;
+        }
+    } while (choice != 0);
+}
+
+void Admin::MonthlySalesReport(MYSQL* conn) {
+    string query = "SELECT DATE_FORMAT(o.orderDate, '%Y-%m') AS Sales_Month, "
+        "SUM(bo.quantity) AS Total_Quantity_Sold, "
+        "SUM(bo.price) AS Total_Sales "
+        "FROM book_order bo "
+        "JOIN `order` o ON bo.orderID = o.orderID "
+        "WHERE o.orderStatus = 'completed' "
+        "GROUP BY Sales_Month "
+        "ORDER BY Sales_Month ASC;";
+
+    if (mysql_query(conn, query.c_str())) {
+        cerr << "Query execution failed: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    MYSQL_RES* result = mysql_store_result(conn);
+    if (!result) {
+        cerr << "Failed to store result: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    Table salesReportTable;
+    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change (%)" });
+
+    MYSQL_ROW row;
+    double previousSales = 0.0; // To store the previous month's total sales
+
+    while ((row = mysql_fetch_row(result))) {
+        string salesMonth = row[0];
+        string totalQuantitySold = row[1];
+        double totalSales = atof(row[2]);
+        string changePercent = "N/A"; // Default value for the first month
+
+        // Calculate percentage change if there is a previous month's data
+        if (previousSales > 0.0) {
+            double change = ((totalSales - previousSales) / previousSales) * 100.0;
+            std::ostringstream changeStream;
+            changeStream << std::fixed << std::setprecision(2) << change;
+            changePercent = changeStream.str() + "%";
+            if (change > 0) {
+                changePercent = "+" + changePercent; // Add "+" for positive changes
+            }
+        }
+
+        // Format total sales to 2 decimal places
+        std::ostringstream salesStream;
+        salesStream << std::fixed << std::setprecision(2) << totalSales;
+
+        salesReportTable.add_row({ salesMonth, totalQuantitySold, salesStream.str(), changePercent });
+        previousSales = totalSales; // Update the previousSales for the next iteration
+    }
+
+    reportTableFormat(salesReportTable);
+    cout << salesReportTable << endl;
+
+    mysql_free_result(result);
+    cout << "\nPress any key to return to the menu...";
     _getch();
 }
 
-void Admin::ViewCustomer(MYSQL* conn) {
+
+void Admin::BookSalesReport(MYSQL* conn) {
+    string query = "SELECT b.Title AS Book_Title, "
+        "SUM(bo.quantity) AS Total_Quantity_Sold, "
+        "SUM(bo.price) AS Total_Sales "
+        "FROM book_order bo "
+        "JOIN book b ON bo.BookID = b.BookID "
+        "GROUP BY b.BookID "
+        "ORDER BY Total_Sales DESC;";
+
+    if (mysql_query(conn, query.c_str())) {
+        cerr << "Query execution failed: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    MYSQL_RES* result = mysql_store_result(conn);
+    if (!result) {
+        cerr << "Failed to store result: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    Table bookSalesTable;
+    bookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
+
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(result))) {
+        bookSalesTable.add_row({ row[0], row[1], row[2] });
+    }
+
+    reportTableFormat(bookSalesTable);
+    cout << bookSalesTable << endl;
+
+    mysql_free_result(result);
+    cout << "\nPress any key to return to the menu...";
+    _getch();
+}
+
+void Admin::BookSalesInMonth(MYSQL* conn) {
+    string month;
+    cout << "Enter the month for the report (format: YYYY-MM): ";
+    cin >> month;
+
+    regex month_format("^\\d{4}-(0[1-9]|1[0-2])$");
+    if (!regex_match(month, month_format)) {
+        cerr << "Invalid month format. Please use YYYY-MM." << endl;
+        cout << "\nPress any key to return to the menu...";
+        _getch();
+        return;
+    }
+
+    string query = "SELECT b.Title AS Book_Title, "
+        "SUM(bo.quantity) AS Total_Quantity_Sold, "
+        "SUM(bo.price) AS Total_Sales "
+        "FROM book_order bo "
+        "JOIN book b ON bo.BookID = b.BookID "
+        "JOIN `order` o ON bo.orderID = o.orderID "
+        "WHERE o.orderStatus = 'completed' "
+        "AND DATE_FORMAT(o.orderDate, '%Y-%m') = '" + month + "' "
+        "GROUP BY b.BookID "
+        "ORDER BY Total_Sales DESC;";
+
+    if (mysql_query(conn, query.c_str())) {
+        cerr << "Query execution failed: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    MYSQL_RES* result = mysql_store_result(conn);
+    if (!result) {
+        cerr << "Failed to store result: " << mysql_error(conn) << endl;
+        _getch();
+        return;
+    }
+
+    Table monthlyBookSalesTable;
+    monthlyBookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
+
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(result))) {
+        monthlyBookSalesTable.add_row({ row[0], row[1], row[2] });
+    }
+
+    reportTableFormat(monthlyBookSalesTable);
+    cout << monthlyBookSalesTable << endl;
+
+    mysql_free_result(result);
+    cout << "\nPress any key to return to the menu...";
+    _getch();
+}
+
+void Admin::ViewCustomerInfo(MYSQL* conn) {
     system("cls");
     cout << "\n\t\t\t\t--- List of All Customers ---\n" << endl;
-    
-    //mysql_query's return type is int
-    int qstate = mysql_query(conn, "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER where Role='customer'");
+
+    int qstate = mysql_query(conn, "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer'");
 
     if (!qstate) {
-        cout << "+-----------------------------------------------------------------------------------------------------------------------+" << endl;
-        cout << "| UserID | Name                 | IC No           | Phone No        | Address                         | Username        |" << endl;
-        cout << "+-----------------------------------------------------------------------------------------------------------------------+" << endl;
+        Table customerInformation;
+        customerInformation.add_row({ "USER ID", "NAME", "IC NO", "PHONE NO", "ADDRESS", "USERNAME" });
 
-  
-        dbConn.res = mysql_store_result(conn);
-        while (dbConn.row = mysql_fetch_row(dbConn.res)) {
-            cout << "| " << setw(6) << left << dbConn.row[0] 
-                << " | " << setw(20) << left << dbConn.row[1] 
-                << " | " << setw(15) << left << dbConn.row[2] 
-                << " | " << setw(15) << left << dbConn.row[3] 
-                << " | " << setw(25) << left << dbConn.row[4] 
-                << " | " << setw(15) << left << dbConn.row[5] 
-                << " |" << endl;
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+
+        while ((row = mysql_fetch_row(res))) {
+            customerInformation.add_row({ row[0], row[1], row[2], row[3], row[4], row[5] });
         }
 
- 
-        cout << "+-----------------------------------------------------------------------------------------------------------------------+" << endl;
+        customerTableFormat(customerInformation);
+
+        cout << customerInformation << endl;
+    }
+    else {
+        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+    }
+
+    cout << "\nPress Any Key To Go Back...";
+    _getch();
+}
+
+void Admin::ViewCustomerOrders(MYSQL* conn, int customerID) {
+    using namespace tabulate;
+    system("cls");
+    cout << "\n\t\t\t--- Completed Orders for Customer ID: " << customerID << " ---\n" << endl;
+
+    // Query to fetch order details along with associated books
+    string query = "SELECT o.orderID, o.orderDate, o.totalAmount, b.Title, bo.quantity, bo.price "
+        "FROM `order` o "
+        "JOIN `book_order` bo ON o.orderID = bo.orderID "
+        "JOIN `book` b ON bo.BookID = b.BookID "
+        "WHERE o.UserID = " + to_string(customerID) + " AND o.orderStatus = 'completed' "
+        "ORDER BY o.orderID";
+
+    int qstate = mysql_query(conn, query.c_str());
+
+    if (!qstate) {
+        MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_ROW row;
+
+        int currentOrderID = -1;
+        Table orderTable;
+
+        while ((row = mysql_fetch_row(res))) {
+            int orderID = stoi(row[0]);
+
+            // When a new order starts
+            if (orderID != currentOrderID) {
+                // Print the table for the previous order if it exists
+                if (currentOrderID != -1) {
+                    cout << orderTable << "\n\n";
+                }
+
+                cout << "+-------------------------------------------------------+\n";
+
+                // Reset the table for the next order
+                orderTable = Table();
+                orderTable.add_row({ "Title", "Quantity", "Price (RM)" });
+                orderTable[0]
+                    .format()
+                    .font_style({ FontStyle::bold })
+                    .font_color(Color::green);
+
+                currentOrderID = orderID;
+
+                // Print order-level information
+                cout << "Order ID: " << row[0]
+                    << "\nOrder Date: " << row[1]
+                    << "\nTotal Amount: RM " << row[2] << "\n";
+                cout << "Books in this order:\n";
+            }
+
+            // Add book information to the table
+            orderTable.add_row({
+                row[3],                 // Book Title
+                row[4],                 // Quantity
+                row[5]                  // Price (RM)
+                });
+        }
+
+        // Print the last order's table if it exists
+        if (currentOrderID != -1) {
+            cout << orderTable << "\n";
+        }
+        else {
+            cout << "\nNo completed orders found for this customer.\n";
+        }
     }
     else {
         cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
@@ -704,6 +964,38 @@ void Admin::SearchBooks(MYSQL* conn) {
     }
 }
 
+void Admin::CustomerManagementMenu(MYSQL* conn) {
+    int choice;
+    do {
+        system("cls");
+        cout << "\n\t\t\t--- Customer Management ---\n";
+        cout << "1. View All Customers\n";
+        cout << "2. View Completed Orders of a Customer\n";
+        cout << "3. Back to Admin Menu\n";
+        cout << "\nEnter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            ViewCustomerInfo(conn);
+            break;
+        case 2: {
+            system("cls");
+            int customerID;
+            cout << "\nEnter Customer ID: ";
+            cin >> customerID;
+            ViewCustomerOrders(conn, customerID);
+            break;
+        }
+        case 3:
+            cout << "\nReturning to Admin Menu...\n";
+            break;
+        default:
+            cout << "\nInvalid choice! Please try again.\n";
+            _getch();
+        }
+    } while (choice != 3);
+}
 
 
 

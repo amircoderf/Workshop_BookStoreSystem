@@ -22,6 +22,11 @@ int main() {
 
     do {
         system("cls");
+        setConsoleTextColor(9);  // Blue for main menu
+        cout << "==========================\n";
+        cout << "       Main Menu\n";
+        cout << "==========================\n\n";
+        setConsoleTextColor(7);  // Default color
         cout << "1. Registration\n2. Log in\n3. Exit" << endl;
         cout << "Please enter your choice: ";
 
@@ -59,8 +64,11 @@ void LogIn(MYSQL* conn) {
     string username, password;
     while (true) {
         system("cls");
-        cout << "Log In" << endl;
-
+        setConsoleTextColor(14);  // Yellow color for header
+        cout << "=============================\n";
+        cout << "  WELCOME TO THE LOGIN PAGE\n";
+        cout << "=============================\n\n";
+        setConsoleTextColor(7);  // Default color
         // Prompt for username
         cout << "Username: ";
         cin >> username;

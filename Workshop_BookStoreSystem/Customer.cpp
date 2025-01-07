@@ -1,4 +1,5 @@
 #include "Customer.h"
+
 using namespace std;
 
 void Customer::CustomerRegistration(MYSQL* conn) {
@@ -86,21 +87,27 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     _getch();
 }
 
-void Customer::CustomerInteface(MYSQL* conn,int userID) {
-    this->userID = userID;//do it so we don't need to pass userID all the time
+void Customer::CustomerInteface(MYSQL* conn, int userID) {
+    this->userID = userID;  // Store userID in the class to avoid passing it around
 
     int choice;
 
     do {
         system("cls");
-        cout << "Welcome, CUSTOMER " << endl << endl;
-        cout << "1. View Books\n2. View Order Cart\n0. Exit" << endl << endl;
+        cout << "===================================================================================" << endl;
+        cout << "                                 Customer Menu                                     " << endl;
+        cout << "===================================================================================" << endl;
+        cout << "Welcome, CUSTOMER" << endl << endl;
+        cout << "1. View Books" << endl;
+        cout << "2. View Order Cart" << endl;
+        cout << "3. View Past Orders" << endl; // Add menu for past orders
+        cout << "0. Exit" << endl << endl;
         cout << "What would you like to do? ";
 
         // Input validation for menu choice
         while (true) {
             if (!(cin >> choice) || choice < 0 || choice > 3) {
-                cout << "Invalid input. Please enter a number between 0 and 6: ";
+                cout << "Invalid input. Please enter a number between 0 and 3: ";
                 cin.clear();  // Clear the error flag
                 cin.ignore(10000, '\n');  // Ignore any invalid input
             }
@@ -109,17 +116,22 @@ void Customer::CustomerInteface(MYSQL* conn,int userID) {
             }
         }
 
+        // Handle user choice
         switch (choice) {
         case 0:
             return;  // Exit the program
         case 1:
-            ViewBooks(conn);
+            ViewBooks(conn);  // View available books
             break;
         case 2:
-            OrderCart(conn);
+            OrderCart(conn);  // View order cart
             break;
+        case 3:
+            viewPastOrder(conn);  // View past orders
             break;
         default:
+            cout << "Invalid choice. Please try again." << endl;
+            _getch();
             break;
         }
     } while (choice != 0);
@@ -128,7 +140,7 @@ void Customer::CustomerInteface(MYSQL* conn,int userID) {
 void Customer::ViewBooks(MYSQL* conn) {
     while (true) {
         system("cls");
-        string query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book";
+        string query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book";
         const char* q = query.c_str();
 
         if (mysql_query(conn, q)) {
@@ -153,22 +165,24 @@ void Customer::ViewBooks(MYSQL* conn) {
         cout << "                              Books in the Database                                " << endl;
         cout << "===================================================================================" << endl << endl;
 
-        int count = 1; // Counter for numbering books
+        Table viewBook;
+
+        viewBook.add_row({ "BookID", "Title", "Price (RM)","Available Stock", "Author", "Publisher", "Published Year"});
         while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
-            cout << "-----------------------------------------------------------------------------------" << endl;
-            setConsoleTextColor(14);
-            cout << " BOOK " << count++ << endl;
-            setConsoleTextColor(7);
-            cout << " BookID        : " << dbConn.row[0] << endl;
-            cout << " ISBN          : " << dbConn.row[1] << endl;
-            cout << " Title         : " << dbConn.row[2] << endl;
-            cout << " Price         : RM" << dbConn.row[3] << endl;
-            cout << " Author        : " << dbConn.row[4] << endl;
-            cout << " Publisher     : " << dbConn.row[5] << endl;
-            cout << " Published Year: " << dbConn.row[6] << endl;
-            cout << "-----------------------------------------------------------------------------------" << endl;
-            cout << "\n\n";
+            viewBook.add_row({
+               dbConn.row[0], // BookID
+               dbConn.row[1], //title
+               dbConn.row[2], // price
+               dbConn.row[3], // stock
+               dbConn.row[4], // Author
+               dbConn.row[5], // Publisher
+               dbConn.row[6]  // Published Year
+                });
         }
+
+        cartTableFormat(viewBook);
+
+        cout << viewBook << endl;
 
         mysql_free_result(dbConn.res);
 
@@ -197,7 +211,53 @@ void Customer::ViewBooks(MYSQL* conn) {
     }
 }
 
+// Function to add or update a book in the order
+void Customer::addOrUpdateBookInOrder(MYSQL* conn, int orderID, int bookID, int quantity, double price) {
+    // Check if the book already exists in the order
+    string checkBookOrderQuery = "SELECT quantity FROM book_order WHERE orderID = " + to_string(orderID) + " AND BookID = " + to_string(bookID);
+    const char* checkBookOrderQ = checkBookOrderQuery.c_str();
 
+    if (mysql_query(conn, checkBookOrderQ)) {
+        cout << "Failed to check existing book in order. Error Code: " << mysql_errno(conn) << endl;
+        return;
+    }
+
+    MYSQL_RES* res = mysql_store_result(conn);
+
+    if (res && mysql_num_rows(res) > 0) {
+        // Book already exists in the order, update the quantity and total price
+        MYSQL_ROW row = mysql_fetch_row(res);
+        int existingQuantity = atoi(row[0]);
+
+        // Update the existing record in the `book_order` table
+        string updateBookOrderQuery = "UPDATE book_order SET quantity = quantity + " + to_string(quantity) + ", price = price + " + to_string(price * quantity) +
+            " WHERE orderID = " + to_string(orderID) + " AND BookID = " + to_string(bookID);
+        const char* updateBookOrderQ = updateBookOrderQuery.c_str();
+
+        if (mysql_query(conn, updateBookOrderQ)) {
+            cout << "Failed to update existing book in order. Error Code: " << mysql_errno(conn) << endl;
+        }
+        else {
+            cout << "Book with ID " << bookID << " quantity updated in your order." << endl;
+        }
+    }
+    else {
+        // Book does not exist in the order, insert a new record
+        string bookOrderQuery = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" + to_string(orderID) + ", " + to_string(bookID) + ", " + to_string(quantity) + ", " + to_string(price * quantity) + ")";
+        const char* bookOrderQ = bookOrderQuery.c_str();
+
+        if (mysql_query(conn, bookOrderQ)) {
+            cout << "Failed to add book to order. Error Code: " << mysql_errno(conn) << endl;
+        }
+        else {
+            cout << "Book with ID " << bookID << " has been added to your order." << endl;
+        }
+    }
+
+    mysql_free_result(res);
+}
+
+// Modify the `chooseBooksToOrder` function to use the `addOrUpdateBookInOrder` function
 void Customer::chooseBooksToOrder(MYSQL* conn) {
     int bookID, quantity;
     double price;
@@ -290,26 +350,10 @@ void Customer::chooseBooksToOrder(MYSQL* conn) {
             orderCreated = true;
         }
 
-        // Insert into the `book_order` table
-        string bookOrderQuery = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" + to_string(orderID) + ", " + to_string(bookID) + ", " + to_string(quantity) + ", " + to_string(price * quantity) + ")";
-        const char* bookOrderQ = bookOrderQuery.c_str();
-
-        if (mysql_query(conn, bookOrderQ)) {
-            cout << "Failed to add book to order. Error Code: " << mysql_errno(conn) << endl;
-            continue;
-        }
-
-        // Update the stock in the `book` table
-        string updateStockQuery = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + to_string(bookID);
-        const char* updateStockQ = updateStockQuery.c_str();
-
-        if (mysql_query(conn, updateStockQ)) {
-            cout << "Failed to update stock. Error Code: " << mysql_errno(conn) << endl;
-            continue;
-        }
+        // Call the function to add or update the book in the order
+        addOrUpdateBookInOrder(conn, orderID, bookID, quantity, price);
 
         totalAmount += price * quantity;
-        cout << "Book with ID " << bookID << " has been added to your order." << endl;
     }
 
     // Update total amount in the `order` table
@@ -347,17 +391,17 @@ void Customer::searchBooks(MYSQL* conn) {
         case 1:
             cout << "Enter the Title to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book WHERE Title LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Title LIKE '%" + keyword + "%'";
             break;
         case 2:
             cout << "Enter the Author to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book WHERE Author LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Author LIKE '%" + keyword + "%'";
             break;
         case 3:
             cout << "Enter the ISBN to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book WHERE ISBN LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE ISBN LIKE '%" + keyword + "%'";
             break;
         case 4:
             return; // Exit the function
@@ -383,17 +427,18 @@ void Customer::searchBooks(MYSQL* conn) {
         }
 
         cout << "\nBooks Found:\n";
-        int count = 1;
-        MYSQL_ROW rows[100]; // To store up to 100 rows for validation
-        int rowIndex = 0;
+        Table table;
+        table.add_row({ "BookID", "Title", "Price","Available Stock", "Author", "Publisher", "Published Year" });
+
+        vector<MYSQL_ROW> rows;
 
         while (MYSQL_ROW row = mysql_fetch_row(res)) {
-            cout << "\nBook " << count++ << ":\n";
-            cout << "BookID: " << row[0] << "\nISBN: " << row[1] << "\nTitle: " << row[2] << "\nPrice: RM" << row[3] << "\nAuthor: " << row[4] << "\nPublisher: " << row[5] << "\nPublished Year: " << row[6] << "\n";
-            rows[rowIndex++] = row;
+            table.add_row({ row[0], row[1], row[2], row[3], row[4], row[5], row[6] });
+            rows.push_back(row); // Store rows dynamically
         }
 
-        mysql_free_result(res);
+        cartTableFormat(table);
+        cout << table << endl;
 
         while (true) {
             cout << "\nEnter the BookID of the book you want to buy (or '0' to search again): ";
@@ -405,103 +450,97 @@ void Customer::searchBooks(MYSQL* conn) {
             }
 
             bool validID = false;
-            for (int i = 0; i < rowIndex; ++i) {
-                if (rows[i] && selectedBookID == rows[i][0]) {
+            MYSQL_ROW selectedRow = nullptr;
+
+            for (const auto& r : rows) {
+                if (r && selectedBookID == r[0]) { // Check BookID
                     validID = true;
+                    selectedRow = r;
                     break;
                 }
             }
 
-            if (validID) {
-                cout << "You have selected BookID: " << selectedBookID << ".\n";
+            if (!validID) {
+                cout << "Invalid BookID. Please try again." << endl;
+                continue;
+            }
 
-                // Process the selected book
-                query = "SELECT Price, Stock FROM book WHERE BookID = " + selectedBookID;
+            // Fetch additional book details
+            int bookID = stoi(selectedRow[0]);
+            double price = atof(selectedRow[3]);
+            int stock = 0;
+
+            query = "SELECT Stock FROM book WHERE BookID = " + to_string(bookID);
+            if (mysql_query(conn, query.c_str())) {
+                cout << "Error fetching stock information! Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            res = mysql_store_result(conn);
+            if (res && mysql_num_rows(res) > 0) {
+                MYSQL_ROW stockRow = mysql_fetch_row(res);
+                stock = atoi(stockRow[0]);
+                mysql_free_result(res);
+            }
+            else {
+                mysql_free_result(res);
+                cout << "Stock information not available.\n";
+                continue;
+            }
+
+            if (stock <= 0) {
+                cout << "Sorry, this book is out of stock.\n";
+                continue;
+            }
+
+            cout << "Enter quantity to buy: ";
+            int quantity;
+            cin >> quantity;
+            cin.ignore(); // Clear input buffer
+
+            if (quantity > stock) {
+                cout << "Not enough stock available. Only " << stock << " left.\n";
+                continue;
+            }
+
+            // Get or create order
+            int orderID = 0;
+            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+            if (mysql_query(conn, query.c_str())) {
+                cout << "Error checking pending order! Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            res = mysql_store_result(conn);
+            if (res && mysql_num_rows(res) > 0) {
+                MYSQL_ROW orderRow = mysql_fetch_row(res);
+                orderID = atoi(orderRow[0]);
+                mysql_free_result(res);
+            }
+            else {
+                mysql_free_result(res);
+                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
                 if (mysql_query(conn, query.c_str())) {
-                    cout << "Error fetching book details! Error Code: " << mysql_errno(conn) << endl;
+                    cout << "Error creating new order! Error Code: " << mysql_errno(conn) << endl;
                     continue;
                 }
-
-                res = mysql_store_result(conn);
-                if (res && mysql_num_rows(res) > 0) {
-                    MYSQL_ROW row = mysql_fetch_row(res);
-                    double price = atof(row[0]);
-                    int stock = atoi(row[1]);
-                    mysql_free_result(res);
-
-                    if (stock <= 0) {
-                        cout << "Sorry, this book is out of stock.\n";
-                        continue;
-                    }
-
-                    cout << "Enter quantity to buy: ";
-                    int quantity;
-                    cin >> quantity;
-
-                    if (quantity > stock) {
-                        cout << "Not enough stock available. Only " << stock << " left.\n";
-                        continue;
-                    }
-
-                    // Check or create order
-                    query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
-                    if (mysql_query(conn, query.c_str())) {
-                        cout << "Error checking pending order! Error Code: " << mysql_errno(conn) << endl;
-                        continue;
-                    }
-
-                    res = mysql_store_result(conn);
-                    int orderID = 0;
-                    if (res && mysql_num_rows(res) > 0) {
-                        MYSQL_ROW orderRow = mysql_fetch_row(res);
-                        orderID = atoi(orderRow[0]);
-                        mysql_free_result(res);
-                    }
-                    else {
-                        mysql_free_result(res);
-                        // Create new order
-                        query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
-                        if (mysql_query(conn, query.c_str())) {
-                            cout << "Error creating new order! Error Code: " << mysql_errno(conn) << endl;
-                            continue;
-                        }
-                        orderID = mysql_insert_id(conn);
-                    }
-
-                    // Add book to order
-                    query = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" +
-                        to_string(orderID) + ", " + selectedBookID + ", " + to_string(quantity) + ", " +
-                        to_string(price * quantity) + ")";
-                    if (mysql_query(conn, query.c_str())) {
-                        cout << "Error adding book to order! Error Code: " << mysql_errno(conn) << endl;
-                        continue;
-                    }
-
-                    string newTotalAmount = "UPDATE `order` SET totalAmount = totalAmount + " + to_string(price * quantity) + " WHERE orderID = " + to_string(orderID);
-                    const char* totalAmount = newTotalAmount.c_str();
-                    if (mysql_query(conn, totalAmount)) {
-                        cout << "Failed to update total amount. Error Code: " << mysql_errno(conn) << endl;
-                        continue;
-                    }
-
-                    // Update stock
-                    query = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + selectedBookID;
-                    if (mysql_query(conn, query.c_str())) {
-                        cout << "Error updating stock! Error Code: " << mysql_errno(conn) << endl;
-                        continue;
-                    }
-
-                    cout << "Book added to order successfully.\n";
-                }
-                else {
-                    mysql_free_result(res);
-                    cout << "BookID " << selectedBookID << " not found.\n";
-                }
+                orderID = mysql_insert_id(conn);
             }
+
+            // Add or update the book in the order
+            addOrUpdateBookInOrder(conn, orderID, bookID, quantity, price);
+
+            // Update the stock
+            query = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + to_string(bookID);
+            if (mysql_query(conn, query.c_str())) {
+                cout << "Error updating stock! Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            cout << "Book added to order successfully.\n";
         }
     }
 }
-
 
 void Customer::sortBooks(MYSQL* conn) {
     while (true) {
@@ -518,16 +557,25 @@ void Customer::sortBooks(MYSQL* conn) {
         if (choice == 5) {
             return; // Exit the function
         }
-
+        //price range query
         string query;
         if (choice == 4) {
             double minPrice, maxPrice;
-            cout << "Enter minimum price: ";
-            cin >> minPrice;
-            cout << "Enter maximum price: ";
-            cin >> maxPrice;
+            cout << "Enter minimum price range: ";
+            while (!(cin >> minPrice) || minPrice < 0) {
+                cout << "Please enter a valid positive number for minimum price: ";
+                cin.clear();
+                cin.ignore(1000, '\n');
+            }
 
-            query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book WHERE Price BETWEEN " + to_string(minPrice) + " AND " + to_string(maxPrice) + " ORDER BY Price ASC";
+            cout << "Enter maximum price range: ";
+            while (!(cin >> maxPrice) || maxPrice < minPrice) {
+                cout << "Please enter a valid positive number greater than minimum price for maximum price: ";
+                cin.clear();
+                cin.ignore(1000, '\n');
+            }
+
+            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Price BETWEEN " + to_string(minPrice) + " AND " + to_string(maxPrice) + " ORDER BY Price ASC";
         }
         else {
             cout << "Choose sorting order:\n1. Ascending\n2. Descending" << endl;
@@ -538,13 +586,13 @@ void Customer::sortBooks(MYSQL* conn) {
             string order = (orderChoice == 2) ? "DESC" : "ASC";
 
             if (choice == 1) {
-                query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book ORDER BY Price " + order;
+                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY Price " + order;
             }
             else if (choice == 2) {
-                query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book ORDER BY Title " + order;
+                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY Title " + order;
             }
             else if (choice == 3) {
-                query = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book ORDER BY PublishedYear " + order;
+                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY PublishedYear " + order;
             }
             else {
                 cout << "Invalid choice. Please try again." << endl;
@@ -569,178 +617,201 @@ void Customer::sortBooks(MYSQL* conn) {
         }
 
         cout << "\nSorted Books:\n";
-        int bookIDs[100];
-        int bookCount = 0;
-        int count = 1;
 
+        vector<MYSQL_ROW> rows;
+        Table sortedBook;
+
+        sortedBook.add_row({ "BookID", "Title", "Price","Available Stock", "Author", "Publisher", "Published Year" });
         while (MYSQL_ROW row = mysql_fetch_row(res)) {
-            cout << "\nBook " << count++ << ":\n";
-            cout << "BookID: " << row[0] << "\nISBN: " << row[1] << "\nTitle: " << row[2] << "\nPrice: RM" << row[3] << "\nAuthor: " << row[4] << "\nPublisher: " << row[5] << "\nPublished Year: " << row[6] << "\n";
-
-            if (bookCount < 100) {
-                bookIDs[bookCount++] = atoi(row[0]);
-            }
+            sortedBook.add_row({ row[0], row[1], row[2], row[3], row[4], row[5], row[6] });
+            rows.push_back(row); // Store rows dynamically           
         }
 
-        mysql_free_result(res);
+        cartTableFormat(sortedBook);
+        cout << sortedBook << endl;
 
         while (true) {
-            cout << "\nEnter BookID to add to your cart (0 to return to Sort Menus): ";
-            int selectedBookID;
-            cin >> selectedBookID;
+            cout << "\nEnter the BookID of the book you want to buy (or '0' to search again): ";
+            string selectedBookID;
+            getline(cin, selectedBookID);
 
-            if (selectedBookID == 0) break;
+            if (selectedBookID == "0") {
+                break; // Exit to search again
+            }
 
-            bool validBookID = false;
-            for (int i = 0; i < bookCount; i++) {
-                if (bookIDs[i] == selectedBookID) {
-                    validBookID = true;
+            bool validID = false;
+            MYSQL_ROW selectedRow = nullptr;
+
+            for (const auto& r : rows) {
+                if (r && selectedBookID == r[0]) { // Check BookID
+                    validID = true;
+                    selectedRow = r;
                     break;
                 }
             }
 
-            if (validBookID) {
-                int quantity;
-                cout << "Enter quantity: ";
-                cin >> quantity;
+            if (!validID) {
+                cout << "Invalid BookID. Please try again." << endl;
+                continue;
+            }
 
-                query = "SELECT Price, Stock FROM book WHERE BookID = " + to_string(selectedBookID);
-                const char* priceQuery = query.c_str();
-                if (mysql_query(conn, priceQuery)) {
-                    cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
-                    continue;
-                }
+            int quantity;
+            cout << "Enter quantity: ";
+            while (!(cin >> quantity) || quantity <= 0) {
+                cout << "Please enter a valid positive number for quantity: ";
+                cin.clear();
+                cin.ignore(1000, '\n');
+            }
 
-                res = mysql_store_result(conn);
-                if (res == nullptr || mysql_num_rows(res) == 0) {
-                    cout << "Book not found or unavailable." << endl;
-                    mysql_free_result(res);
-                    continue;
-                }
+            query = "SELECT Price, Stock FROM book WHERE BookID = " + selectedBookID;
+            const char* priceQuery = query.c_str();
+            if (mysql_query(conn, priceQuery)) {
+                cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
 
-                MYSQL_ROW row = mysql_fetch_row(res);
-                double price = atof(row[0]);
-                int stock = atoi(row[1]);
+            res = mysql_store_result(conn);
+            if (res == nullptr || mysql_num_rows(res) == 0) {
+                cout << "Book not found or unavailable." << endl;
                 mysql_free_result(res);
+                continue;
+            }
 
-                if (quantity > stock) {
-                    cout << "Not enough stock available. Only " << stock << " left." << endl;
-                    continue;
-                }
+            MYSQL_ROW row = mysql_fetch_row(res);
+            double price = atof(row[0]);
+            int stock = atoi(row[1]);
+            mysql_free_result(res);
 
-                query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
-                const char* checkOrderQuery = query.c_str();
-                if (mysql_query(conn, checkOrderQuery)) {
-                    cout << "Failed to check order. Error Code: " << mysql_errno(conn) << endl;
-                    continue;
-                }
+            if (quantity > stock) {
+                cout << "Not enough stock available. Only " << stock << " left." << endl;
+                continue;
+            }
 
-                res = mysql_store_result(conn);
-                int orderID = 0;
-                if (mysql_num_rows(res) > 0) {
-                    MYSQL_ROW orderRow = mysql_fetch_row(res);
-                    orderID = atoi(orderRow[0]);
-                }
-                else {
-                    mysql_free_result(res);
-                    query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
-                    const char* createOrderQuery = query.c_str();
-                    if (mysql_query(conn, createOrderQuery)) {
-                        cout << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
-                        continue;
-                    }
-                    orderID = mysql_insert_id(conn);
-                }
-                mysql_free_result(res);
+            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+            const char* checkOrderQuery = query.c_str();
+            if (mysql_query(conn, checkOrderQuery)) {
+                cout << "Failed to check order. Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
 
-                string orderQuery = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" + to_string(orderID) + ", " + to_string(selectedBookID) + ", " + to_string(quantity) + ", " + to_string(price * quantity) + ")";
-                const char* orderQ = orderQuery.c_str();
-                if (mysql_query(conn, orderQ)) {
-                    cout << "Failed to add book to order. Error Code: " << mysql_errno(conn) << endl;
-                    continue;
-                }
-
-                string updateStockQuery = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + to_string(selectedBookID);
-                const char* updateStockQ = updateStockQuery.c_str();
-                if (mysql_query(conn, updateStockQ)) {
-                    cout << "Failed to update stock. Error Code: " << mysql_errno(conn) << endl;
-                    continue;
-                }
-                string newTotalAmount = "UPDATE `order` SET totalAmount = totalAmount + " + to_string(price * quantity) + " WHERE orderID = " + to_string(orderID);
-                const char* totalAmount = newTotalAmount.c_str();
-                if (mysql_query(conn, totalAmount)) {
-                    cout << "Failed to update total amount. Error Code: " << mysql_errno(conn) << endl;
-                    continue;
-                }
-
-                cout << "Book added to cart successfully!" << endl;
+            res = mysql_store_result(conn);
+            int orderID = 0;
+            if (mysql_num_rows(res) > 0) {
+                MYSQL_ROW orderRow = mysql_fetch_row(res);
+                orderID = atoi(orderRow[0]);
             }
             else {
-                cout << "Invalid BookID selected." << endl;
+                mysql_free_result(res);
+                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
+                const char* createOrderQuery = query.c_str();
+                if (mysql_query(conn, createOrderQuery)) {
+                    cout << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
+                    continue;
+                }
+                orderID = mysql_insert_id(conn);
             }
-        }
+            mysql_free_result(res);
 
-        _getch();
+            // Use addOrUpdateBookInOrder instead of direct insert
+            addOrUpdateBookInOrder(conn, orderID, stoi(selectedBookID), quantity, price);
+
+            // Update the stock in the `book` table
+            string updateStockQuery = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + selectedBookID;
+            const char* updateStockQ = updateStockQuery.c_str();
+            if (mysql_query(conn, updateStockQ)) {
+                cout << "Failed to update stock. Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            string newTotalAmount = "UPDATE `order` SET totalAmount = totalAmount + " + to_string(price * quantity) + " WHERE orderID = " + to_string(orderID);
+            const char* totalAmount = newTotalAmount.c_str();
+            if (mysql_query(conn, totalAmount)) {
+                cout << "Failed to update total amount. Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            cout << "Book added to cart successfully!" << endl;
+        }
     }
+    _getch();
 }
 
 void Customer::OrderCart(MYSQL* conn) {
-    system("cls");
-    cout << "===================================================================================\n";
-    cout << "                              Order Cart                                           \n";
-    cout << "===================================================================================\n";
-
-    string query = "SELECT o.orderID, bo.BookID, b.Title, bo.quantity, bo.price, b.Price AS UnitPrice FROM `order` o "
-        "JOIN book_order bo ON o.orderID = bo.orderID "
-        "JOIN book b ON bo.BookID = b.BookID "
-        "WHERE o.UserID = " + to_string(userID) + " AND o.orderStatus = 'pending'";
-    const char* q = query.c_str();
-
-    if (mysql_query(conn, q)) {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-        _getch();
-        return;
-    }
-
-    dbConn.res = mysql_store_result(conn);
-
-    if (dbConn.res == nullptr || mysql_num_rows(dbConn.res) == 0) {
-        cout << "Your order cart is empty." << endl;
-        mysql_free_result(dbConn.res);
-        _getch();
-        return;
-    }
-
-    double totalPrice = 0;
-    cout << "Your Order Cart:\n";
-    cout << "-----------------------------------------------------------------------------------\n";
-    cout << left << setw(10) << "BookID" << setw(30) << "Title" << setw(10) << "Quantity" << setw(10) << "Unit Price" << setw(10) << "Total" << "\n";
-    cout << "-----------------------------------------------------------------------------------\n";
-
-    while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
-        int bookID = atoi(dbConn.row[1]);
-        string title = dbConn.row[2];
-        int quantity = atoi(dbConn.row[3]);
-        double unitPrice = atof(dbConn.row[5]);
-        double total = quantity * unitPrice;
-
-        cout << left << setw(10) << bookID
-            << setw(30) << title
-            << setw(10) << quantity
-            << setw(10) << "RM" << fixed << setprecision(2) << unitPrice
-            << setw(10) << "RM" << fixed << setprecision(2) << total << "\n";
-
-        totalPrice += total;
-    }
-
-    mysql_free_result(dbConn.res);
-
-    cout << "-----------------------------------------------------------------------------------\n";
-    cout << "Total Price: RM" << totalPrice << "\n";
-    cout << "-----------------------------------------------------------------------------------\n";
-
     while (true) {
-        cout << "\nOptions:\n1. Confirm Order\n2. Remove Item\n3. Back to Main Menu\n";
+        system("cls");
+        cout << "===================================================================================\n";
+        cout << "                              Order Cart                                           \n";
+        cout << "===================================================================================\n";
+
+        string query = "SELECT o.orderID, bo.BookID, b.Title, bo.quantity, bo.price, b.Price AS UnitPrice FROM `order` o "
+            "JOIN book_order bo ON o.orderID = bo.orderID "
+            "JOIN book b ON bo.BookID = b.BookID "
+            "WHERE o.UserID = " + to_string(userID) + " AND o.orderStatus = 'pending'";
+        const char* q = query.c_str();
+
+        if (mysql_query(conn, q)) {
+            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            _getch();
+            return;
+        }
+
+        dbConn.res = mysql_store_result(conn);
+
+        if (dbConn.res == nullptr || mysql_num_rows(dbConn.res) == 0) {
+            cout << "Your order cart is empty." << endl;
+            if (dbConn.res) {
+                mysql_free_result(dbConn.res);
+            }
+            _getch();
+            return;
+        }
+
+        // Create a table using the formatting library
+        Table orderCartTable;
+        orderCartTable.add_row({ "BookID", "Title", "Quantity", "Unit Price (RM)", "Total (RM)" });
+
+        double totalPrice = 0.0;
+
+        // Populate table rows
+        while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
+            int bookID = atoi(dbConn.row[1]);
+            string title = dbConn.row[2];
+            int quantity = atoi(dbConn.row[3]);
+            double unitPrice = atof(dbConn.row[5]);
+            double total = quantity * unitPrice;
+
+            // Format prices inline with `ostringstream`
+            ostringstream unitPriceStream, totalStream;
+            unitPriceStream << fixed << setprecision(2) << unitPrice;
+            totalStream << fixed << setprecision(2) << total;
+
+            orderCartTable.add_row({
+                to_string(bookID),
+                title,
+                to_string(quantity),
+                unitPriceStream.str(),
+                totalStream.str()
+                });
+
+            totalPrice += total;
+        }
+
+        mysql_free_result(dbConn.res);
+
+        // Add total price row
+        ostringstream totalPriceStream;
+        totalPriceStream << fixed << setprecision(2) << totalPrice;
+        orderCartTable.add_row({
+            "", "", "", "Total Price:", totalPriceStream.str()
+            });
+
+        // Apply table formatting
+        cartTableFormat(orderCartTable);
+
+        // Display the table
+        cout << orderCartTable << endl;
+
+        cout << "\nOptions:\n1. Confirm Order\n2. Update/Remove Item\n3. Back to Main Menu\n";
         int choice;
         cout << "Enter your choice: ";
         cin >> choice;
@@ -748,19 +819,18 @@ void Customer::OrderCart(MYSQL* conn) {
         switch (choice) {
         case 1:
             confirmOrder(conn);
-            return;
+            break;
         case 2:
-            removeItemFromCart(conn);
-            return;
+            adjustItemQuantity(conn);
+            break;
         case 3:
             return;
         default:
             cout << "Invalid choice. Please try again." << endl;
+            _getch();
         }
     }
 }
-
-
 
 void Customer::confirmOrder(MYSQL* conn) {
     system("cls");
@@ -795,7 +865,7 @@ void Customer::confirmOrder(MYSQL* conn) {
     cin >> choice;
 
     if (choice == 1) {
-        string updateQuery = "UPDATE `order` SET orderStatus = 'confirmed' WHERE orderID = " + to_string(orderID);
+        string updateQuery = "UPDATE `order` SET orderStatus = 'completed' WHERE orderID = " + to_string(orderID);
         const char* updateQ = updateQuery.c_str();
 
         if (mysql_query(conn, updateQ)) {
@@ -812,107 +882,201 @@ void Customer::confirmOrder(MYSQL* conn) {
     _getch();
 }
 
+void Customer::adjustItemQuantity(MYSQL* conn) {
+    int bookID, newQuantity;
 
-void Customer::removeItemFromCart(MYSQL* conn) {
-    system("cls");
-    cout << "===================================================================================\n";
-    cout << "                              Remove Item From Cart                                \n";
-    cout << "===================================================================================\n";
+    cout << "\nEnter the BookID to adjust quantity: ";
+    cin >> bookID;
+    cout << "Enter the new quantity (0 to remove): ";
+    cin >> newQuantity;
 
-    string query = "SELECT bo.BookID, b.Title, bo.quantity FROM `order` o JOIN book_order bo ON o.orderID = bo.orderID JOIN book b ON bo.BookID = b.BookID WHERE o.UserID = " + to_string(userID) + " AND o.orderStatus = 'pending'";
-    const char* q = query.c_str();
-
-    if (mysql_query(conn, q)) {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+    if (newQuantity < 0) {
+        cout << "Invalid quantity. Please enter 0 or a positive number." << endl;
         _getch();
         return;
     }
 
-    dbConn.res = mysql_store_result(conn);
+    // Query to check if the BookID exists in the current order cart,otherwise it might return error
+    string checkQuery = "SELECT bo.quantity FROM book_order bo "
+        "JOIN `order` o ON bo.orderID = o.orderID "
+        "WHERE o.UserID = " + to_string(userID) +
+        " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
+    const char* checkQueryCStr = checkQuery.c_str();
 
-    if (dbConn.res == nullptr || mysql_num_rows(dbConn.res) == 0) {
-        cout << "Your order cart is empty." << endl;
-        mysql_free_result(dbConn.res);
+    if (mysql_query(conn, checkQueryCStr)) {
+        cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
         _getch();
         return;
     }
 
-    cout << "Your Order Cart:\n";
-
-    bool validBookID = false;
-    while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
-        cout << "BookID: " << dbConn.row[0] << "\n";
-        cout << "Title: " << dbConn.row[1] << "\n";
-        cout << "Quantity: " << dbConn.row[2] << "\n\n";
-    }
-
-    mysql_data_seek(dbConn.res, 0); // Reset result set cursor
-
-    cout << "Enter the BookID of the item to remove (or 0 to cancel): ";
-    int selectedBookID;
-    cin >> selectedBookID;
-
-    if (selectedBookID == 0) {
-        cout << "Item removal canceled." << endl;
-        mysql_free_result(dbConn.res);
+    MYSQL_RES* res = mysql_store_result(conn);
+    if (res == nullptr || mysql_num_rows(res) == 0) {
+        cout << "BookID not found in the order cart." << endl;
+        mysql_free_result(res);
         _getch();
         return;
     }
 
-    while ((dbConn.row = mysql_fetch_row(dbConn.res))) {
-        if (atoi(dbConn.row[0]) == selectedBookID) {
-            validBookID = true;
-            break;
-        }
-    }
+    mysql_free_result(res);
 
-    if (!validBookID) {
-        cout << "Invalid BookID." << endl;
-        mysql_free_result(dbConn.res);
-        _getch();
-        return;
-    }
+    if (newQuantity == 0) {
+        // Remove the item from the cart
+        string deleteQuery = "DELETE bo FROM book_order bo "
+            "JOIN `order` o ON bo.orderID = o.orderID "
+            "WHERE o.UserID = " + to_string(userID) +
+            " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
+        const char* deleteQueryCStr = deleteQuery.c_str();
 
-    mysql_free_result(dbConn.res);
-
-
-
-    string priceQuery = "SELECT b.price FROM book b WHERE b.BookID = " + to_string(selectedBookID);
-    if (mysql_query(conn, priceQuery.c_str())) {
-        cout << "Failed to fetch book price. Error Code: " << mysql_errno(conn) << endl;
-    }
-    else {
-        MYSQL_RES* res = mysql_store_result(conn);
-        if (res && mysql_num_rows(res) > 0) {
-            MYSQL_ROW row = mysql_fetch_row(res);
-            double bookPrice = atof(row[0]);
-            mysql_free_result(res);
-
-            // Query to delete the book from the cart
-            string deleteQuery = "DELETE bo FROM book_order bo JOIN `order` o ON bo.orderID = o.orderID WHERE bo.BookID = " +
-                to_string(selectedBookID) + " AND o.UserID = " + to_string(userID) + " AND o.orderStatus = 'pending'";
-            if (mysql_query(conn, deleteQuery.c_str())) {
-                cout << "Failed to remove item. Error Code: " << mysql_errno(conn) << endl;
-            }
-            else {
-                cout << "Item removed successfully from cart." << endl;
-
-                // Query to update the totalAmount in the `order` table
-                string updateTotalQuery = "UPDATE `order` SET totalAmount = totalAmount - " + to_string(bookPrice) +
-                    " WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
-                if (mysql_query(conn, updateTotalQuery.c_str())) {
-                    cout << "Failed to update total amount. Error Code: " << mysql_errno(conn) << endl;
-                }
-                else {
-                    cout << "Total amount updated successfully." << endl;
-                }
-            }
+        if (mysql_query(conn, deleteQueryCStr)) {
+            cout << "Failed to remove item. Error Code: " << mysql_errno(conn) << endl;
         }
         else {
-            cout << "Book price not found." << endl;
+            cout << "Item removed from the cart." << endl;
         }
     }
+    else {
+        // Update the quantity of the item
+        string updateQuery = "UPDATE book_order bo "
+            "JOIN `order` o ON bo.orderID = o.orderID "
+            "SET bo.quantity = " + to_string(newQuantity) +
+            " WHERE o.UserID = " + to_string(userID) +
+            " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
+        const char* updateQueryCStr = updateQuery.c_str();
+
+        if (mysql_query(conn, updateQueryCStr)) {
+            cout << "Failed to update item quantity. Error Code: " << mysql_errno(conn) << endl;
+        }
+        else {
+            cout << "Item quantity updated to " << newQuantity << "." << endl;
+        }
+    }
+
+    // Update the total price of the order when the order already exists,see
+    string updateTotalQuery = "UPDATE `order` o "
+        "JOIN (SELECT bo.orderID, SUM(bo.quantity * bo.price) AS newTotal "
+        "      FROM book_order bo "
+        "      JOIN `order` o ON bo.orderID = o.orderID "
+        "      WHERE o.UserID = " + to_string(userID) +
+        "        AND o.orderStatus = 'pending' "
+        "      GROUP BY bo.orderID) AS updatedTotal "
+        "ON o.orderID = updatedTotal.orderID "
+        "SET o.totalAmount = updatedTotal.newTotal "
+        "WHERE o.UserID = " + to_string(userID) +
+        " AND o.orderStatus = 'pending'";
+    const char* updateTotalQueryCStr = updateTotalQuery.c_str();
+
+    if (mysql_query(conn, updateTotalQueryCStr)) {
+        cout << "Failed to update the total amount of the order. Error Code: " << mysql_errno(conn) << endl;
+    }
+    else {
+        cout << "Order total amount updated successfully." << endl;
+    }
+
+    _getch();
 }
+
+void Customer::viewPastOrder(MYSQL* conn) {
+    while (true) {
+        system("cls"); // Clear the screen at the start of each loop
+        cout << "===================================================================================" << endl;
+        cout << "                                PAST ORDERS                                   " << endl;
+        cout << "===================================================================================" << endl;
+
+        // Query to fetch past orders for the logged-in user
+        string query = "SELECT orderID, orderDate, totalAmount, orderStatus FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus != 'pending'";
+        const char* pastOrdersQuery = query.c_str();
+
+        if (mysql_query(conn, pastOrdersQuery)) {
+            cout << "Failed to fetch past orders. Error Code: " << mysql_errno(conn) << endl;
+            _getch();
+            return;
+        }
+
+        MYSQL_RES* res = mysql_store_result(conn);
+        if (res == nullptr || mysql_num_rows(res) == 0) {
+            cout << "No past orders found." << endl;
+            mysql_free_result(res);
+            _getch();
+            return;
+        }
+
+        // Display past orders in tabular format
+        Table table;
+        table.add_row({ "OrderID", "Order Date", "Total Amount (RM)", "Status" });
+
+        vector<int> orderIDs; // Store OrderIDs for further details
+
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res))) {
+            table.add_row({ row[0], row[1], row[2], row[3] });
+            orderIDs.push_back(atoi(row[0]));
+        }
+
+        cout << table << endl;
+        mysql_free_result(res);
+
+        // Allow the user to view details of a specific order
+        cout << "\nEnter OrderID to view details (0 to return to main menu): ";
+        int selectedOrderID;
+        cin >> selectedOrderID;
+
+        if (selectedOrderID == 0) break;
+
+        if (find(orderIDs.begin(), orderIDs.end(), selectedOrderID) != orderIDs.end()) {
+            // Fetch details of the selected order
+            query = "SELECT b.Title, o.quantity, b.Price, (o.quantity * b.Price) AS Total "
+                "FROM book_order o "
+                "JOIN book b ON o.BookID = b.BookID "
+                "WHERE o.orderID = " + to_string(selectedOrderID);
+            const char* orderDetailsQuery = query.c_str();
+
+            if (mysql_query(conn, orderDetailsQuery)) {
+                cout << "Failed to fetch order details. Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
+
+            res = mysql_store_result(conn);
+            if (res == nullptr || mysql_num_rows(res) == 0) {
+                cout << "No details found for the selected order." << endl;
+                mysql_free_result(res);
+                continue;
+            }
+
+            // Display order details
+            Table detailsTable;
+            detailsTable.add_row({ "Title", "Quantity", "Price (RM)", "Total (RM)" });
+
+            while ((row = mysql_fetch_row(res))) {
+                detailsTable.add_row({ row[0], row[1], row[2], row[3] });
+            }
+
+            // Prominently display Order ID
+            cout << "\n===================================================================================" << endl;
+            cout << "                               ORDER DETAILS                                    " << endl;
+            cout << "===================================================================================" << endl;
+            cout << "                           *** ORDER ID: " << selectedOrderID << " ***                     " << endl;
+            cout << "===================================================================================" << endl;
+
+            cout << detailsTable << endl;
+            mysql_free_result(res);
+        }
+        else {
+            cout << "Invalid OrderID. Please try again." << endl;
+        }
+
+        cout << "\nPress any key to continue..." << endl;
+        _getch(); // Wait for user input before refreshing
+    }
+}
+
+void Customer::myProfile(MYSQL* conn) {
+
+}
+
+
+
+
+
 
 
 

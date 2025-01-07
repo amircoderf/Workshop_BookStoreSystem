@@ -9,6 +9,8 @@
 #include <iomanip>
 #include <conio.h>
 #include <sstream>
+#include <regex>
+#include "SharedFunc.h"
 
 using namespace std;
 
@@ -24,6 +26,12 @@ public:
 	void SalesReport(MYSQL* conn);
 	bool DisplayBooks(MYSQL* conn);
 	void SearchBooks(MYSQL* conn);
+	void MonthlySalesReport(MYSQL* conn);
+	void BookSalesReport(MYSQL* conn);
+	void BookSalesInMonth(MYSQL* conn);
+	void CustomerManagementMenu(MYSQL* conn);
+	void ViewCustomerInfo(MYSQL* conn);
+	void ViewCustomerOrders(MYSQL* conn, int customerID);
 };
 
 
