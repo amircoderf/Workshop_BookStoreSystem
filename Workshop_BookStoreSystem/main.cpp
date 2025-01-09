@@ -114,7 +114,9 @@ void LogIn(MYSQL* conn) {
                 admin.AdminInterface(conn);
             }
             else if (role == "customer") {
-                customer.CustomerInteface(conn, userId); // Pass UserID for customer actions
+                customer.setDBConnection(conn);
+                customer.setUserId(userId);
+                customer.CustomerInteface(); // Pass UserID for customer actions
             }
             else {
                 cout << "Unknown role. Please contact the administrator." << endl;

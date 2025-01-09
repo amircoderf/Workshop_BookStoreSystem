@@ -12,23 +12,27 @@ using namespace std;
 
 class Customer {
 private:
-    db_connection dbConn;
+    MYSQL* conn;
     string ic_no, phone_no, name, address, cus_username, cus_password;
     int userID;
 
 public:
+    void setUserId(int userID);
+    void setDBConnection(MYSQL* conn);
     void CustomerRegistration(MYSQL* conn);
-    void CustomerInteface(MYSQL* conn,int userID);
-    void ViewBooks(MYSQL* conn);
-    void OrderCart(MYSQL* conn);
-    void chooseBooksToOrder(MYSQL* conn);
-    void searchBooks(MYSQL* conn);
-    void sortBooks(MYSQL* conn);
-    void confirmOrder(MYSQL* conn);
-    void adjustItemQuantity(MYSQL* conn);
-    void addOrUpdateBookInOrder(MYSQL* conn, int orderID, int bookID, int quantity, double price);
-    void myProfile(MYSQL* conn);
-    void viewPastOrder(MYSQL* conn);
+    void CustomerInteface();
+    void ViewBooks();
+    void OrderCart();
+    void chooseBooksToOrder();
+    void searchBooks();
+    void sortBooks();
+    void confirmOrder();
+    void adjustItemQuantity();
+    void addOrUpdateBookInOrder(int orderID, int bookID, int quantity, double price);
+    void updateBookStock(int bookID, int quantity);
+    void myProfile();
+    void viewPastOrder();
+    void EditProfile();
     //update book quantity soon tm
 };
 

@@ -521,7 +521,7 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
     }
 
     Table salesReportTable;
-    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change (%)" });
+    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change in Total Sales (%)" });
 
     MYSQL_ROW row;
     double previousSales = 0.0; // To store the previous month's total sales
@@ -536,11 +536,16 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
         if (previousSales > 0.0) {
             double change = ((totalSales - previousSales) / previousSales) * 100.0;
             std::ostringstream changeStream;
-            changeStream << std::fixed << std::setprecision(2) << change;
-            changePercent = changeStream.str() + "%";
+
+            // Add "increases by" or "decreases by" without negative signs
             if (change > 0) {
-                changePercent = "+" + changePercent; // Add "+" for positive changes
+                changeStream << "increases by " << std::fixed << std::setprecision(2) << change << "%";
             }
+            else if (change < 0) {
+                changeStream << "decreases by " << std::fixed << std::setprecision(2) << fabs(change) << "%";
+            }
+
+            changePercent = changeStream.str();
         }
 
         // Format total sales to 2 decimal places
@@ -558,7 +563,6 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
     cout << "\nPress any key to return to the menu...";
     _getch();
 }
-
 
 void Admin::BookSalesReport(MYSQL* conn) {
     string query = "SELECT b.Title AS Book_Title, "
