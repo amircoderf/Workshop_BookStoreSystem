@@ -10,8 +10,10 @@
 #include <conio.h>
 #include <sstream>
 #include <regex>
+#include <matplotlibcpp.h>
 #include "SharedFunc.h"
 
+namespace plt = matplotlibcpp;
 using namespace std;
 
 class Admin {
@@ -32,6 +34,7 @@ public:
 	void CustomerManagementMenu(MYSQL* conn);
 	void ViewCustomerInfo(MYSQL* conn);
 	void ViewCustomerOrders(MYSQL* conn, int customerID);
+	void viewReportGraph(MYSQL* conn);
 };
 
 
