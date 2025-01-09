@@ -498,55 +498,71 @@ void Admin::SalesReport(MYSQL* conn) {
 }
 
 void Admin::MonthlySalesReport(MYSQL* conn) {
-    std::string query = "SELECT DATE_FORMAT(o.orderDate, '%Y-%m') AS Sales_Month, "
+    string query = "SELECT DATE_FORMAT(o.orderDate, '%Y-%m') AS Sales_Month, "
         "SUM(bo.quantity) AS Total_Quantity_Sold, "
         "SUM(bo.price) AS Total_Sales "
         "FROM book_order bo "
-        "JOIN order o ON bo.orderID = o.orderID "
+        "JOIN `order` o ON bo.orderID = o.orderID "
         "WHERE o.orderStatus = 'completed' "
         "GROUP BY Sales_Month "
         "ORDER BY Sales_Month ASC;";
 
     if (mysql_query(conn, query.c_str())) {
-        std::cerr << "Query execution failed: " << mysql_error(conn) << std::endl;
+        cerr << "Query execution failed: " << mysql_error(conn) << endl;
+        _getch();
         return;
     }
 
     MYSQL_RES* result = mysql_store_result(conn);
     if (!result) {
-        std::cerr << "Failed to store result: " << mysql_error(conn) << std::endl;
+        cerr << "Failed to store result: " << mysql_error(conn) << endl;
+        _getch();
         return;
     }
 
-    // Vectors to store data for plotting
-    std::vector<std::string> months;
-    std::vector<double> totalQuantities;
-    std::vector<double> totalSales;
+    Table salesReportTable;
+    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change in Total Sales (%)" });
 
     MYSQL_ROW row;
+    double previousSales = 0.0; // To store the previous month's total sales
+
     while ((row = mysql_fetch_row(result))) {
-        months.push_back(row[0]); // Sales Month
-        totalQuantities.push_back(std::stod(row[1])); // Total Quantity Sold
-        totalSales.push_back(std::stod(row[2])); // Total Sales
+        string salesMonth = row[0];
+        string totalQuantitySold = row[1];
+        double totalSales = atof(row[2]);
+        string changePercent = "N/A"; // Default value for the first month
+
+        // Calculate percentage change if there is a previous month's data
+        if (previousSales > 0.0) {
+            double change = ((totalSales - previousSales) / previousSales) * 100.0;
+            std::ostringstream changeStream;
+
+            // Add "increases by" or "decreases by" without negative signs
+            if (change > 0) {
+                changeStream << "increases by " << std::fixed << std::setprecision(2) << change << "%";
+            }
+            else if (change < 0) {
+                changeStream << "decreases by " << std::fixed << std::setprecision(2) << fabs(change) << "%";
+            }
+
+            changePercent = changeStream.str();
+        }
+
+        // Format total sales to 2 decimal places
+        std::ostringstream salesStream;
+        salesStream << std::fixed << std::setprecision(2) << totalSales;
+
+        salesReportTable.add_row({ salesMonth, totalQuantitySold, salesStream.str(), changePercent });
+        previousSales = totalSales; // Update the previousSales for the next iteration
     }
 
-    // Generate the bar chart
-    plt::figure_size(800, 600); // Set the figure size
-
-    // Plot total sales as a bar chart
-    plt::bar(months, totalSales, { {"color", "red"}, {"label", "Total Sales"} });
-    plt::xlabel("Months");
-    plt::ylabel("Total Sales (RM)");
-    plt::title("Monthly Sales Report");
-    plt::legend();
-
-    // Save the chart as an image file
-    plt::save("sales_report.png");
-    std::cout << "Sales report saved as 'sales_report.png'." << std::endl;
+    reportTableFormat(salesReportTable);
+    cout << salesReportTable << endl;
 
     mysql_free_result(result);
+    cout << "\nPress any key to return to the menu...";
+    _getch();
 }
-
 
 void Admin::BookSalesReport(MYSQL* conn) {
     string query = "SELECT b.Title AS Book_Title, "

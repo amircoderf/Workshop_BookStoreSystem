@@ -10,10 +10,8 @@
 #include <conio.h>
 #include <sstream>
 #include <regex>
-#include <matplotlibcpp.h>
 #include "SharedFunc.h"
 
-namespace plt = matplotlibcpp;
 using namespace std;
 
 class Admin {
