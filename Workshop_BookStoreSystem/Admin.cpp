@@ -520,44 +520,57 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
         return;
     }
 
-    Table salesReportTable;
-    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change in Total Sales From Previous Month(%)" });
+    // Vectors to hold months and corresponding sales
+    std::vector<std::string> salesMonths;
+    std::vector<double> totalSales;
 
     MYSQL_ROW row;
-    double previousSales = 0.0; // To store the previous month's total sales
-
     while ((row = mysql_fetch_row(result))) {
         string salesMonth = row[0];
-        string totalQuantitySold = row[1];
-        double totalSales = atof(row[2]);
-        string changePercent = "N/A"; // Default value for the first month
+        double totalSalesAmount = atof(row[2]);  // Total sales value
 
-        // Calculate percentage change if there is a previous month's data
-        if (previousSales > 0.0) {
-            double change = ((totalSales - previousSales) / previousSales) * 100.0;
-            std::ostringstream changeStream;
+        salesMonths.push_back(salesMonth);
+        totalSales.push_back(totalSalesAmount);
+    }
 
-            // Add "increases by" or "decreases by" without negative signs
-            if (change > 0) {
-                changeStream << "increases by " << std::fixed << std::setprecision(2) << change << "%";
-            }
-            else if (change < 0) {
-                changeStream << "decreases by " << std::fixed << std::setprecision(2) << fabs(change) << "%";
-            }
-
-            changePercent = changeStream.str();
+    // Determine the maximum sales value to scale the chart
+    double maxSales = 0;
+    for (double sales : totalSales) {
+        if (sales > maxSales) {
+            maxSales = sales;
         }
+    }
 
-        // Format total sales to 2 decimal places
+    // Print the table
+    system("cls");
+    cout << "\n\t\t\t--- Monthly Sales Report ---\n";
+    cout << "Sales Report Table:\n";
+
+    Table salesReportTable;
+    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)" });
+
+    for (size_t i = 0; i < salesMonths.size(); ++i) {
         std::ostringstream salesStream;
-        salesStream << std::fixed << std::setprecision(2) << totalSales;
-
-        salesReportTable.add_row({ salesMonth, totalQuantitySold, salesStream.str(), changePercent });
-        previousSales = totalSales; // Update the previousSales for the next iteration
+        salesStream << std::fixed << std::setprecision(2) << totalSales[i];
+        salesReportTable.add_row({ salesMonths[i], std::to_string(static_cast<int>(totalSales[i])), salesStream.str() });
     }
 
     reportTableFormat(salesReportTable);
     cout << salesReportTable << endl;
+
+    // Print the bar chart
+    cout << "\nSales Chart (Total Sales represented by *):\n\n";
+    for (size_t i = 0; i < salesMonths.size(); ++i) {
+        // Calculate the number of stars to represent sales
+        int numStars = static_cast<int>((totalSales[i] / maxSales) * 50); // Max width of 50 chars
+
+        // Print the bar
+        cout << std::setw(10) << salesMonths[i] << " | ";
+        for (int j = 0; j < numStars; ++j) {
+            cout << "*";
+        }
+        cout << " (" << std::fixed << std::setprecision(2) << totalSales[i] << " RM)" << endl;
+    }
 
     mysql_free_result(result);
     cout << "\nPress any key to return to the menu...";
