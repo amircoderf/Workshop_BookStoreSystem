@@ -569,7 +569,7 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
         for (int j = 0; j < numStars; ++j) {
             cout << "*";
         }
-        cout << " (" << std::fixed << std::setprecision(2) << totalSales[i] << " RM)" << endl;
+        cout << " (RM" << std::fixed << std::setprecision(2) << totalSales[i] << " )" << endl;
     }
 
     mysql_free_result(result);
@@ -599,14 +599,41 @@ void Admin::BookSalesReport(MYSQL* conn) {
         return;
     }
 
+    // Variables to hold total quantity sold and the table for book sales report
+    int totalQuantitySoldForAllBooks = 0;
     Table bookSalesTable;
-    bookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
+    bookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales", "Popularity Percentage(%)" });
 
+    // First pass: Calculate total quantity sold for all books
     MYSQL_ROW row;
     while ((row = mysql_fetch_row(result))) {
-        bookSalesTable.add_row({ row[0], row[1], row[2] });
+        int quantitySold = atoi(row[1]); // Total quantity sold for the book
+        totalQuantitySoldForAllBooks += quantitySold; // Sum up the total quantity sold
     }
 
+    // Move the result pointer back to the beginning for the second pass
+    mysql_data_seek(result, 0);
+
+    // Second pass: Populate the table and calculate the popularity percentage based on quantity sold
+    while ((row = mysql_fetch_row(result))) {
+        string bookTitle = row[0];
+        int quantitySold = atoi(row[1]);
+        double totalSales = atof(row[2]);
+
+        // Calculate the popularity percentage based on quantity sold
+        double popularityPercentage = (double(quantitySold) / totalQuantitySoldForAllBooks) * 100;
+
+        // Add the row to the table
+        std::ostringstream salesStream;
+        salesStream << std::fixed << std::setprecision(2) << totalSales;
+
+        std::ostringstream percentageStream;
+        percentageStream << std::fixed << std::setprecision(2) << popularityPercentage;
+
+        bookSalesTable.add_row({ bookTitle, std::to_string(quantitySold), salesStream.str(), percentageStream.str() });
+    }
+
+    // Format and display the report table
     reportTableFormat(bookSalesTable);
     cout << bookSalesTable << endl;
 
@@ -614,6 +641,8 @@ void Admin::BookSalesReport(MYSQL* conn) {
     cout << "\nPress any key to return to the menu...";
     _getch();
 }
+
+
 
 void Admin::BookSalesInMonth(MYSQL* conn) {
     string month;
