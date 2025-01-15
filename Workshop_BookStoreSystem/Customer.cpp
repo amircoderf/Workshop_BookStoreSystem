@@ -1,17 +1,33 @@
 #include "Customer.h"
 
-using namespace std;
 
 void Customer::CustomerRegistration(MYSQL* conn) {
     system("cls");
     cout << "Customer Sign In" << endl;
 
-    cin.ignore();
-    cout << "Name: ";
-    getline(cin, name);
 
     while (true) {
-        cout << "IC no (12 digits): ";
+        cout << "Name: ";
+        cin.ignore();
+        getline(cin, name);
+
+        if (name.empty()) {
+            cout << "Name cannot be empty. Please enter a valid name." << endl;
+            continue;
+        }
+
+        // Check if name contains only valid characters (letters, spaces, and optionally '-' and "'")
+        if (!regex_match(name, regex("^[A-Za-z\\s'-]+$"))) {
+            cout << "Invalid name. Name can only contain letters, spaces, dashes (-), and apostrophes ('). Please try again." << endl;
+            continue; // Ask for input again
+        }
+
+        break; // Exit the loop if the name is valid
+    }
+
+
+    while (true) {
+        cout << "IC no (12 digits)[example:0102********]: ";
         getline(cin, ic_no);
         if (ic_no.length() == 12 && isNumeric(ic_no)) {
             break;
@@ -22,10 +38,10 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     while (true) {
         cout << "Phone no(Ex.:0123456789): ";
         getline(cin, phone_no);
-        if (isNumeric(phone_no)) {
+        if (phone_no.length()==10&&isNumeric(phone_no)) {
             break;
         }
-        cout << "Invalid input. Please enter only numbers for Phone no." << endl;
+        cout << "Invalid input. Please enter only 10 numbers for Phone no." << endl;
     }
 
     cout << "Address: ";
@@ -36,43 +52,46 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         getline(cin, cus_username);
 
         if (cus_username.length() < 5) {
-            cout << "Invalid input. Username must be at least 5 letters long." << endl;
+            cout << "Invalid input. Username must be at least 5 characters long." << endl;
             continue;
         }
 
-        // Check if username already exists in the database
-        string query = "SELECT COUNT(*) FROM user WHERE username = '" + cus_username + "'";
-        const char* q = query.c_str();
-
-        if (mysql_query(conn, q)) {
-            cerr << "Error checking username. Error Code: " << mysql_errno(conn) << endl;
-            continue; // Retry input
-        }
-
-        MYSQL_RES* res = mysql_store_result(conn);
-        if (res == nullptr) {
-            cerr << "Error fetching result. Error Code: " << mysql_errno(conn) << endl;
-            continue; // Retry input
-        }
-
-        MYSQL_ROW row = mysql_fetch_row(res);
-        int count = atoi(row[0]);
-        mysql_free_result(res);
-
-        if (count > 0) {
+        // Use the usernameExists function to check if the username is already taken
+        if (usernameExists(cus_username)) {
             cout << "This username is already taken. Please try a different one." << endl;
         }
         else {
-            // Username is unique
             break;
         }
     }
 
-    cout << "Password: ";
-    getline(cin, cus_password);//check 2 times,adjust later
+    cout << "Enter password (at least 6 characters, combination of letters and numbers): ";
+    getline(cin, cus_password);
+
+    // Check if the password meets the minimum length and contains both letters and numbers
+    while (cus_password.length() < 6 || !regex_match(cus_password, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
+        cout << "Password must be at least 6 characters long and contain both letters and numbers. Please try again: ";
+        getline(cin, cus_password);
+    }
+
+    // Ask the user to re-enter the password for confirmation
+    string confirmPassword;
+    cout << "Re-enter password to confirm: ";
+    getline(cin, confirmPassword);
+
+    // Check if both passwords match
+    while (cus_password != confirmPassword) {
+        cout << "Passwords do not match. Please re-enter the password: ";
+        getline(cin, cus_password);
+        cout << "Re-enter password to confirm: ";
+        getline(cin, confirmPassword);
+    }
+
+    // Once passwords are confirmed, hash the password
+    string hash = BCrypt::generateHash(cus_password);
 
     string insert_query ="INSERT INTO USER (Name, IC_no, Phone_no, Address, username, password, Role) "
-                         "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address +"', '" + cus_username + "', '" + cus_password + "', 'customer')";
+                         "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address +"', '" + cus_username + "', '" + hash + "', 'customer')";
 
     const char* q = insert_query.c_str();
 
@@ -405,11 +424,27 @@ void Customer::searchBooks() {
         cout << "                              Search Books                                         " << endl;
         cout << "===================================================================================" << endl;
 
-        cout << "1. Search by Title\n2. Search by Author\n3. Search by ISBN\n4. Back to Main Menu" << endl;
+        cout << "1. Search by Title\n2. Search by Author\n3. Search by Book ID\n4. Search by Publisher\n5. Back to Main Menu" << endl;
         int choice;
         cout << "Enter your choice: ";
-        cin >> choice;
-        cin.ignore(); // Ignore trailing newline
+
+        // Check if the user enters a valid integer
+        if (!(cin >> choice)) {
+            cout << "Invalid input. Please enter a number between 1 and 5." << endl;
+            (void)_getch();
+            cin.clear(); // Clear the error flag
+            cin.ignore(1000, '\n'); // Ignore the invalid input
+            continue;
+        }
+
+        // Handle invalid choice outside the range
+        if (choice < 1 || choice > 5) {
+            cout << "Invalid choice. Please enter a number between 1 and 5." << endl;
+            (void)_getch();
+            continue; 
+        }
+
+        cin.ignore(1000,'\n');
 
         string keyword;
         string query;
@@ -419,26 +454,27 @@ void Customer::searchBooks() {
         case 1:
             cout << "Enter the Title to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Title LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Title LIKE '%" + keyword + "%'";
             break;
         case 2:
             cout << "Enter the Author to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Author LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Author LIKE '%" + keyword + "%'";
             break;
         case 3:
-            cout << "Enter the ISBN to search: ";
+            cout << "Enter the Book ID to search: ";
             getline(cin, keyword);
-            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE ISBN LIKE '%" + keyword + "%'";
+            query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE BookID LIKE '%" + keyword + "%'";
             break;
         case 4:
-            return; // Exit the function
-        default:
-            //try a better way next time
-            cout << "Invalid choice. Please try again." << endl;
-            _getch();
-            continue;
+            cout << "Enter the Publisher to search: ";
+            getline(cin, keyword);
+            query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Publisher LIKE '%" + keyword + "%'";
+            break;
+        case 5:
+            return; // Exit the function if the user chooses to go back
         }
+
 
         const char* q = query.c_str();
         if (mysql_query(conn, q)) {
@@ -590,14 +626,14 @@ void Customer::sortBooks() {
             double minPrice, maxPrice;
             cout << "Enter minimum price range: ";
             while (!(cin >> minPrice) || minPrice < 0) {
-                cout << "Please enter a valid positive number for minimum price: ";
+                cout << "Please enter a valid positive number for minimum price range: ";
                 cin.clear();
                 cin.ignore(1000, '\n');
             }
 
             cout << "Enter maximum price range: ";
             while (!(cin >> maxPrice) || maxPrice < minPrice) {
-                cout << "Please enter a valid positive number greater than minimum price for maximum price: ";
+                cout << "Please enter a valid positive number greater than minimum price for maximum price range: ";
                 cin.clear();
                 cin.ignore(1000, '\n');
             }
@@ -978,8 +1014,7 @@ void Customer::adjustItemQuantity() {
             "JOIN `order` o ON bo.orderID = o.orderID "
             "JOIN book b ON bo.BookID = b.BookID "
             "SET bo.quantity = " + to_string(newQuantity) +
-            ", bo.price = b.Price * " + to_string(newQuantity) +
-            // Update the price based on quantity and book price
+            ", bo.price = b.Price * " + to_string(newQuantity) +  // Update price based on quantity and book price
             " WHERE o.UserID = " + to_string(userID) +
             " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
         const char* updateQueryCStr = updateQuery.c_str();
@@ -1005,7 +1040,7 @@ void Customer::adjustItemQuantity() {
 
     // Update the total price of the order
     string updateTotalQuery = "UPDATE `order` o "
-        "JOIN (SELECT bo.orderID, SUM(bo.quantity * bo.price) AS newTotal "
+        "JOIN (SELECT bo.orderID, SUM(bo.price) AS newTotal "
         "      FROM book_order bo "
         "      JOIN `order` o ON bo.orderID = o.orderID "
         "      WHERE o.UserID = " + to_string(userID) +
@@ -1014,7 +1049,7 @@ void Customer::adjustItemQuantity() {
         "ON o.orderID = updatedTotal.orderID "
         "SET o.totalAmount = updatedTotal.newTotal "
         "WHERE o.UserID = " + to_string(userID) +
-        " AND o.orderStatus = 'pending'";
+        " AND o.orderStatus = 'pending';";
     const char* updateTotalQueryCStr = updateTotalQuery.c_str();
 
     if (mysql_query(conn, updateTotalQueryCStr)) {
@@ -1026,6 +1061,8 @@ void Customer::adjustItemQuantity() {
 
     _getch();
 }
+
+
 
 void Customer::viewPastOrder() {
     while (true) {
@@ -1068,7 +1105,7 @@ void Customer::viewPastOrder() {
         mysql_free_result(res);
 
         // Allow the user to view details of a specific order
-        cout << "\nEnter OrderID to view details (0 to return to main menu): ";
+        cout << "\nEnter Invoice Number to view details (0 to return to main menu): ";
         int selectedOrderID;
         cin >> selectedOrderID;
 
@@ -1122,11 +1159,11 @@ void Customer::viewPastOrder() {
 }
 
 void Customer::myProfile() {
+    Table profileTable;
     system("cls");
-    cout << "\n\t\t\t\t--- View Profile ---\n" << endl;
+    cout << "\n\033[1;35m\t\t\t\t=== View/Edit Profile ===\033[0m\n" << endl;
 
-    // Query to retrieve the customer's profile information
-    string query = "SELECT Name, IC_no, Phone_no, Address, username FROM USER WHERE UserID = " + to_string(userID);
+    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(userID);
     int qstate = mysql_query(conn, query.c_str());
 
     if (!qstate) {
@@ -1134,43 +1171,66 @@ void Customer::myProfile() {
         MYSQL_ROW row = mysql_fetch_row(res);
 
         if (row) {
-            cout << "NAME: " << row[0] << endl;
-            cout << "IC NO: " << row[1] << endl;
-            cout << "PHONE NO: " << row[2] << endl;
-            cout << "ADDRESS: " << row[3] << endl;
-            cout << "USERNAME: " << row[4] << endl;
+            profileTable.add_row({ "Field", "Value" });
+            profileTable.add_row({ "NAME", row[0] });
+            profileTable.add_row({ "IC NO (Read-Only)", row[1] });
+            profileTable.add_row({ "PHONE NO", row[2] });
+            profileTable.add_row({ "ADDRESS", row[3] });
+            profileTable.add_row({ "USERNAME", row[4] });
         }
         else {
-            cout << "No customer found with UserID " << userID << endl;
+            cout << "\033[1;31mNo customer found with UserID \033[0m" << userID << endl;
+            mysql_free_result(res);
+            return;
         }
+
+        profileTable.format()
+            .border_top("-")
+            .border_bottom("-")
+            .border_left("|")
+            .border_right("|")
+            .corner("+");
+
+        profileTable[0].format()
+            .background_color(Color::blue)
+            .font_style({ FontStyle::bold })
+            .font_align(FontAlign::center);
+
+        cout << profileTable << endl;
 
         mysql_free_result(res);
     }
     else {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+        cout << "\033[1;31mQuery Execution Problem! Error Code: \033[0m" << mysql_errno(conn) << endl;
+        return;
     }
-
-    cout << "\nPress 1 to edit profile (0 to return to main menu): ";
     int choice;
 
-    // Input validation for edit option
     while (true) {
-        if (!(cin >> choice) || (choice != 0 && choice != 1)) {
-            cout << "Invalid input. Please enter 1 to edit profile or 0 to return: ";
+
+        cout << "\n\033[1;36mPress 1 to edit profile (0 to return to main menu): \033[0m";
+        cin >> choice;
+
+        if (cin.fail() || (choice != 0 && choice != 1)) {
+            cout << "\033[1;31mInvalid input. Please enter only 1 or 0.\033[0m" << endl;
             cin.clear();
             cin.ignore(10000, '\n');
         }
         else {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             break;
         }
     }
 
     if (choice == 1) {
-        EditProfile();  // Call the edit profile function
+        EditProfile();
     }
-    else if (choice == 0) {
-        return;  // Return to the main menu
+    else {
+        return;
     }
+
+    cout << "\n\033[1;36mPress any key to return to the main menu...\033[0m";
+    _getch();
 }
 
 
@@ -1187,10 +1247,7 @@ void Customer::updateBookStock(int bookID, int quantity) {
 
 
 void Customer::EditProfile() {
-    system("cls");
-
-    // Query to retrieve the customer's current profile
-    string query = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE UserID = " + to_string(userID);
+    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(userID);
     int qstate = mysql_query(conn, query.c_str());
 
     if (!qstate) {
@@ -1198,61 +1255,183 @@ void Customer::EditProfile() {
         MYSQL_ROW row = mysql_fetch_row(res);
 
         if (row) {
-            cout << "\nCurrent Profile Information:" << endl;
-            cout << "USER ID: " << row[0] << endl;
-            cout << "NAME: " << row[1] << endl;
-            cout << "IC NO: " << row[2] << endl;
-            cout << "PHONE NO: " << row[3] << endl;
-            cout << "ADDRESS: " << row[4] << endl;
-            cout << "USERNAME: " << row[5] << endl;
+            string currentName = row[0];
+            string currentICNo = row[1];
+            string currentPhoneNo = row[2];
+            string currentAddress = row[3];
+            string currentUsername = row[4];
+            string currentPasswordHash = row[5];
 
-            // Prompt for new values
-            string newName, newIC_no, newPhone_no, newAddress, newUsername;
-            cout << "\nEnter new Name (leave empty to keep current): ";
-            cin.ignore();  // To clear the input buffer
-            getline(cin, newName);
-            if (newName.empty()) newName = row[1];
+            string newName, newPhoneNo, newAddress, newUsername, newPasswordHash = currentPasswordHash;
+            string oldPassword, newPassword1, newPassword2;
 
-            cout << "Enter new IC No (leave empty to keep current): ";
-            getline(cin, newIC_no);
-            if (newIC_no.empty()) newIC_no = row[2];
+            cout << "\n\033[1;32mEdit Your Profile Information:\033[0m\n";
 
-            cout << "Enter new Phone No (leave empty to keep current): ";
-            getline(cin, newPhone_no);
-            if (newPhone_no.empty()) newPhone_no = row[3];
+            // Name
+            while (true) {
+                cout << "\033[1;36mEnter new Name (leave empty to keep current [" << currentName << "]): \033[0m";
+                getline(cin, newName);
 
-            cout << "Enter new Address (leave empty to keep current): ";
+                if (newName.empty()) {
+                    newName = currentName; // Keep the current name if input is empty
+                    break; 
+                }
+                // Regular expression to allow letters, spaces, '-' and '@' and '''
+                regex namePattern("^[A-Za-z\\s']+$");
+
+                // Check if the input matches the pattern
+                if (regex_match(newName, namePattern)) {
+                    break; // Exit the loop if the name is valid
+                }
+                else {
+                    cout << "\033[1;31mInvalid name. Only letters, spaces, '-' ,'@' ,apostrophe are allowed. Please try again.\033[0m" << endl;
+                    // Loop continues, asking for input again
+                }
+            }
+
+            // Phone No
+            while (true) {
+                cout << "\033[1;36mEnter new Phone No (leave empty to keep current [" << currentPhoneNo << "]): \033[0m";
+                getline(cin, newPhoneNo);
+
+                // If the input is empty, keep the current phone number
+                if (newPhoneNo.empty()) {
+                    newPhoneNo = currentPhoneNo;
+                    break; // Exit the loop since we have a valid input (current phone number)
+                }
+                else if (isNumeric(newPhoneNo) && newPhoneNo.length() == 10) {
+                    break; // Exit the loop if the phone number is valid (10 digits)
+                }
+                else
+                    cout << "\033[1;31mInvalid phone number. It must be exactly 10 digits. Please try again.\033[0m" << endl;
+            }
+
+            // Address
+            cout << "\033[1;36mEnter new Address (leave empty to keep current): \033[0m";
             getline(cin, newAddress);
-            if (newAddress.empty()) newAddress = row[4];
+            if (newAddress.empty()) newAddress = currentAddress;
 
-            cout << "Enter new Username (leave empty to keep current): ";
-            getline(cin, newUsername);
-            if (newUsername.empty()) newUsername = row[5];
+            // Username
+            while (true) {
+                cout << "\033[1;36mEnter new Username (leave empty to keep current [" << currentUsername << "]): \033[0m";
+                getline(cin, newUsername);
 
-            // Update the customer profile in the database
-            string updateQuery = "UPDATE USER SET Name = '" + newName + "', IC_no = '" + newIC_no + "', Phone_no = '" + newPhone_no + "', Address = '" + newAddress + "', username = '" + newUsername + "' WHERE UserID = " + to_string(userID);
+                if (newUsername.empty()) {
+                    newUsername = currentUsername; // Keep the current username if input is empty
+                    break; // Exit the loop
+                }
+
+                // Check if the username is at least 5 characters long
+                if (newUsername.length() < 5) {
+                    cout << "\033[1;31mUsername must be at least 5 characters long. Please try again.\033[0m" << endl;
+                    continue; 
+                }
+
+                // Check if the new username exists in the database
+                if (usernameExists(newUsername)) {
+                    cout << "\033[1;31mUsername already exists. Please enter a different username.\033[0m" << endl;
+                }
+                else {
+                    break; // Exit the loop if the username doesn't exist and is valid
+                }
+            }
+
+
+            // Password
+            while (true) {
+                cout << "\033[1;36mEnter your current password to change it (leave empty to keep current): \033[0m";
+                oldPassword = getHiddenInput();
+
+                if (!oldPassword.empty()) {
+                    if (BCrypt::validatePassword(oldPassword, currentPasswordHash)) {
+                        // Correct current password entered, proceed with new password
+                        while (true) {
+                            cout << "\033[1;36mEnter new password (at least 6 characters, combination of letters and numbers): \033[0m";
+                            newPassword1 = getHiddenInput();
+
+                            // Check if the new password meets the criteria:
+                            // - Minimum length of 6 characters
+                            // - Combination of letters and numbers
+                            if (newPassword1.length() < 6 || !regex_match(newPassword1, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
+                                cout << "\033[1;31mPassword must be at least 6 characters long and contain both letters and numbers. Please try again.\033[0m" << endl;
+                                continue; // Ask the user to enter the password again
+                            }
+
+                            if (newPassword1 == oldPassword) {
+                                cout << "\033[1;31mNew password cannot be the same as the old password. Please enter a different password.\033[0m" << endl;
+                                continue; // Ask the user to enter the password again
+                            }
+
+                            cout << "\033[1;36mRe-enter new password: \033[0m";
+                            newPassword2 = getHiddenInput();
+
+                            if (newPassword1 == newPassword2) {
+                                newPasswordHash = BCrypt::generateHash(newPassword1);
+                                break; // Password is successfully changed, exit the loop
+                            }
+                            else {
+                                cout << "\033[1;31mPasswords do not match. Please try again.\033[0m" << endl;
+                                // Ask the user to input the passwords again
+                            }
+                        }
+                        break; // Exit the loop after successfully changing the password
+                    }
+                    else {
+                        // Incorrect current password, ask the user to input again
+                        cout << "\033[1;31mIncorrect current password. Please try again.\033[0m" << endl;
+                        // The loop will continue and ask for the current password again
+                    }
+                }
+                else {
+                    // User decided not to change the password, exit the loop
+                    break;
+                }
+            }
+
+            // Update the database
+            string updateQuery = "UPDATE USER SET Name='" + newName +
+                "', Phone_no='" + newPhoneNo +
+                "', Address='" + newAddress +
+                "', username='" + newUsername +
+                "', password='" + newPasswordHash +
+                "' WHERE UserID=" + to_string(userID);
 
             qstate = mysql_query(conn, updateQuery.c_str());
-
             if (!qstate) {
-                cout << "\nCustomer profile updated successfully!" << endl;
+                cout << "\n\033[1;32mYour profile updated successfully!\033[0m" << endl;
             }
             else {
-                cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+                cout << "\033[1;31mFailed to update profile! Error Code: \033[0m" << mysql_errno(conn) << endl;
             }
         }
         else {
-            cout << "No customer found with UserID " << userID << endl;
+            cout << "\033[1;31mError: User data not found.\033[0m" << endl;
         }
-
         mysql_free_result(res);
     }
     else {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+        cout << "\033[1;31mFailed to retrieve user data! Error Code: \033[0m" << mysql_errno(conn) << endl;
     }
 
-    cout << "\nPress Any Key To Go Back...";
-    _getch();
+}
+
+bool Customer::usernameExists(const string& username) {
+    string query = "SELECT COUNT(*) FROM USER WHERE username = '" + username + "'";
+    int qstate = mysql_query(conn, query.c_str());
+
+    if (qstate) {
+        cout << "\033[1;31mError checking username existence. Error Code: \033[0m" << mysql_errno(conn) << endl;
+        return false; // Assume false in case of error
+    }
+
+    MYSQL_RES* res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    mysql_free_result(res);
+
+    if (row && atoi(row[0]) > 0) {
+        return true; // Username exists
+    }
+    return false; // Username does not exist
 }
 
 

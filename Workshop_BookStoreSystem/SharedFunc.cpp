@@ -21,21 +21,23 @@ string getHiddenInput() {
         if (ch == '\0' || ch == -32) {
             _getch();
         }
-        else if (ch == '\b') {
+        else if (ch == '\b') { // Backspace handling
             if (!input.empty()) {
                 cout << "\b \b"; // Remove character from output
                 input.pop_back(); // Remove last character from string
             }
         }
-        else if (isalnum(ch) || ispunct(ch)) { // Allow letters, numbers, and special characters
+        else if (isalnum(ch) || ispunct(ch) || ch == ' ') { // Allow letters, numbers, special characters, and spaces
             input.push_back(ch);
-            cout << '*';
+            cout << '*'; // Mask input with asterisks
         }
         // Ignore other invalid characters
     }
     cout << endl;
     return input;
 }
+
+
 
 void setConsoleTextColor(int color) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);

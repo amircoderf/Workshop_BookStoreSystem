@@ -7,6 +7,7 @@
 #include "Admin.h"
 #include "DBConnection.h"
 
+
 using namespace std;
 
 //object decalaration
@@ -105,9 +106,10 @@ void LogIn(MYSQL* conn) {
         // Prompt for password
         cout << "Password: ";
         password = getHiddenInput();
+        bool userPassword = BCrypt::validatePassword(password, correctPassword);
 
         // Validate login credentials
-        if (userExists && password == correctPassword) {
+        if (userExists && userPassword) {
             cout << "\nLogin successful!" << endl;
 
             if (role == "admin") {

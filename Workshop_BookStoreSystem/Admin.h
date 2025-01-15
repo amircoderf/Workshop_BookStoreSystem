@@ -31,7 +31,7 @@ public:
 	void BookSalesInMonth(MYSQL* conn);
 	void CustomerManagementMenu(MYSQL* conn);
 	void ViewCustomerInfo(MYSQL* conn);
-	void ViewCustomerOrders(MYSQL* conn, int customerID);
+	void ViewCustomerOrders(MYSQL* conn);
 	void viewReportGraph(MYSQL* conn);
 };
 

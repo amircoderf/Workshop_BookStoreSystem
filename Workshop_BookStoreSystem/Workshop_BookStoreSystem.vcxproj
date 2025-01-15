@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libbcrypt-master\src\bcrypt.c" />
+    <ClCompile Include="..\libbcrypt-master\src\crypt_blowfish.c" />
+    <ClCompile Include="..\libbcrypt-master\src\crypt_gensalt.c" />
+    <ClCompile Include="..\libbcrypt-master\src\wrapper.c" />
     <ClCompile Include="Admin.cpp" />
     <ClCompile Include="Customer.cpp" />
     <ClCompile Include="DBConnection.cpp" />
@@ -108,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\HP VICTUS\Downloads\mysql-connector-c++-9.1.0-winx64\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\tabulate-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP VICTUS\Downloads\mysql-connector-c++-9.1.0-winx64\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\tabulate-master\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\libbcrypt-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,7 +145,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\HP VICTUS\Downloads\mysql-connector-c++-9.1.0-winx64\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\tabulate-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP VICTUS\Downloads\mysql-connector-c++-9.1.0-winx64\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\tabulate-master\include;C:\Users\HP VICTUS\Documents\Visual Studio 2022\source\Workshop_BookStoreSystem\libbcrypt-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -7,7 +7,9 @@
 #include <conio.h>
 #include <string>
 #include <sstream>
+#include <regex>
 #include <vector>
+#include "bcrypt/BCrypt.hpp"
 using namespace std;
 
 class Customer {
@@ -33,6 +35,7 @@ public:
     void myProfile();
     void viewPastOrder();
     void EditProfile();
+    bool usernameExists(const string& username);
     //update book quantity soon tm
 };
 

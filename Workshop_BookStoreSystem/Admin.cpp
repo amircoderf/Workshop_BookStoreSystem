@@ -521,7 +521,7 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
     }
 
     Table salesReportTable;
-    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change in Total Sales (%)" });
+    salesReportTable.add_row({ "Sales Month", "Total Quantity Sold", "Total Sales(RM)", "Change in Total Sales From Previous Month(%)" });
 
     MYSQL_ROW row;
     double previousSales = 0.0; // To store the previous month's total sales
@@ -655,109 +655,254 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
     _getch();
 }
 
-void Admin::ViewCustomerInfo(MYSQL* conn) {
+void Admin::ViewCustomerInfo(MYSQL* conn)
+{
     system("cls");
     cout << "\n\t\t\t\t--- List of All Customers ---\n" << endl;
 
-    int qstate = mysql_query(conn, "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer'");
+    // Check if the connection to the database is successful
+    if (conn == nullptr) {
+        cout << "\033[1;31mError: Database connection failed!\033[0m" << endl;
+        return; // Exit the function if connection failed
+    }
 
-    if (!qstate) {
-        Table customerInformation;
-        customerInformation.add_row({ "USER ID", "NAME", "IC NO", "PHONE NO", "ADDRESS", "USERNAME" });
+    int choice = 0;
+    bool continueSearching = true;
 
-        MYSQL_RES* res = mysql_store_result(conn);
-        MYSQL_ROW row;
+    while (continueSearching) {
+        // Ask the user what to search by
+        cout << "1. View all customers\n";
+        cout << "2. Search by Name\n";
+        cout << "3. Search by Username\n";
+        cout << "4. Search by Phone No\n";
+        cout << "5. Search by Address\n";
+        cout << "0. Go back\n"; // Option to go back
+        cout << "Enter your choice: ";
 
-        while ((row = mysql_fetch_row(res))) {
-            customerInformation.add_row({ row[0], row[1], row[2], row[3], row[4], row[5] });
+        // Validate the choice input
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "\033[1;31mInvalid input! Please enter a number between 0 and 5.\033[0m" << endl;
+            this_thread::sleep_for(chrono::seconds(1));
+            continue; // Ask the user for input again
         }
 
-        customerTableFormat(customerInformation);
+        // If user chooses 0, go back
+        if (choice == 0) {
+            return; // Exit the search menu and go back to the previous menu
+        }
 
-        cout << customerInformation << endl;
-    }
-    else {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-    }
+        // Check if the choice is within the valid range
+        if (choice < 1 || choice > 5) {
+            cout << "\033[1;31mInvalid choice! Please enter a number between 0 and 5.\033[0m" << endl;
+            this_thread::sleep_for(chrono::seconds(1));
+            continue; // Ask the user to input search criteria again
+        }
 
-    cout << "\nPress Any Key To Go Back...";
-    _getch();
-}
+        cin.ignore();
 
-void Admin::ViewCustomerOrders(MYSQL* conn, int customerID) {
-    using namespace tabulate;
-    system("cls");
-    cout << "\n\t\t\t--- Completed Orders for Customer ID: " << customerID << " ---\n" << endl;
+        string searchQuery;
+        string keyword;
 
-    // Query to fetch order details along with associated books
-    string query = "SELECT o.orderID, o.orderDate, o.totalAmount, b.Title, bo.quantity, bo.price "
-        "FROM `order` o "
-        "JOIN `book_order` bo ON o.orderID = bo.orderID "
-        "JOIN `book` b ON bo.BookID = b.BookID "
-        "WHERE o.UserID = " + to_string(customerID) + " AND o.orderStatus = 'completed' "
-        "ORDER BY o.orderID";
-
-    int qstate = mysql_query(conn, query.c_str());
-
-    if (!qstate) {
-        MYSQL_RES* res = mysql_store_result(conn);
-        MYSQL_ROW row;
-
-        int currentOrderID = -1;
-        Table orderTable;
-
-        while ((row = mysql_fetch_row(res))) {
-            int orderID = stoi(row[0]);
-
-            // When a new order starts
-            if (orderID != currentOrderID) {
-                // Print the table for the previous order if it exists
-                if (currentOrderID != -1) {
-                    cout << orderTable << "\n\n";
-                }
-
-                cout << "+-------------------------------------------------------+\n";
-
-                // Reset the table for the next order
-                orderTable = Table();
-                orderTable.add_row({ "Title", "Quantity", "Price (RM)" });
-                orderTable[0]
-                    .format()
-                    .font_style({ FontStyle::bold })
-                    .font_color(Color::green);
-
-                currentOrderID = orderID;
-
-                // Print order-level information
-                cout << "Order ID: " << row[0]
-                    << "\nOrder Date: " << row[1]
-                    << "\nTotal Amount: RM " << row[2] << "\n";
-                cout << "Books in this order:\n";
+        bool validSearch = false;
+        while (!validSearch) {
+            switch (choice) {
+            case 1:
+                searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer'";
+                validSearch = true;
+                break;
+            case 2:
+                cout << "Enter Name to search: ";
+                getline(cin, keyword);
+                searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Name LIKE '%" + keyword + "%'";
+                validSearch = true;
+                break;
+            case 3:
+                cout << "Enter Username to search: ";
+                getline(cin, keyword);
+                searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND username LIKE '%" + keyword + "%'";
+                validSearch = true;
+                break;
+            case 4:
+                cout << "Enter Phone No to search: ";
+                getline(cin, keyword);
+                searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Phone_no LIKE '%" + keyword + "%'";
+                validSearch = true;
+                break;
+            case 5:
+                cout << "Enter Address to search: ";
+                getline(cin, keyword);
+                searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Address LIKE '%" + keyword + "%'";
+                validSearch = true;
+                break;
             }
 
-            // Add book information to the table
-            orderTable.add_row({
-                row[3],                 // Book Title
-                row[4],                 // Quantity
-                row[5]                  // Price (RM)
-                });
+            // Execute the query
+            int qstate = mysql_query(conn, searchQuery.c_str());
+
+            if (qstate) {
+                // If query execution fails, print error code and description
+                cout << "\033[1;31mQuery Execution Problem! Error Code: " << mysql_errno(conn) << " - " << mysql_error(conn) << "\033[0m" << endl;
+                return; // Exit the function if the query fails
+            }
+
+            MYSQL_RES* res = mysql_store_result(conn);
+            if (res == nullptr) {
+                cout << "\033[1;31mError fetching result. Error Code: " << mysql_errno(conn) << " - " << mysql_error(conn) << "\033[0m" << endl;
+                return;
+            }
+
+            // Check if there are any rows in the result set
+            if (mysql_num_rows(res) == 0) {
+                cout << "\033[1;33mNo customers found matching the criteria. Please try again.\033[0m" << endl;
+                mysql_free_result(res);
+                this_thread::sleep_for(chrono::seconds(1)); 
+                continue; // Ask the user to input search criteria again
+            }
+
+            // Prepare to display the results in a table format
+            Table customerInformation;
+            customerInformation.add_row({ "USER ID", "NAME", "IC NO", "PHONE NO", "ADDRESS", "USERNAME" });
+
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(res))) {
+                customerInformation.add_row({ row[0], row[1], row[2], row[3], row[4], row[5] });
+            }
+
+            // Format the customer information and print it
+            customerTableFormat(customerInformation);
+            cout << customerInformation << endl;
+
+            // Free the result memory
+            mysql_free_result(res);
+
+            validSearch = true; // Exit the loop since the search was successful
         }
 
-        // Print the last order's table if it exists
-        if (currentOrderID != -1) {
-            cout << orderTable << "\n";
+        // Prompt to continue or stop
+        cout << "\nWould you like to search again? (Y/N): ";
+        char contChoice;
+        cin >> contChoice;
+        cin.ignore(); // Clear the buffer after reading the char input
+
+        if (contChoice == 'Y' || contChoice == 'y') {
+            continueSearching = true;
+        }
+        else if (contChoice == 'N' || contChoice == 'n') {
+            continueSearching = false;
         }
         else {
-            cout << "\nNo completed orders found for this customer.\n";
+            cout << "\033[1;31mInvalid input! Please enter Y or N.\033[0m" << endl;
         }
-    }
-    else {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
     }
 
     cout << "\nPress Any Key To Go Back...";
     _getch();
 }
+
+
+void Admin::ViewCustomerOrders(MYSQL* conn) {
+    system("cls");
+    int customerID = 0;
+    bool continueSearching = true;
+
+    while (continueSearching) {
+        cout << "\n\t\t\t--- View Completed Orders ---\n" << endl;
+        cout << "Enter Customer ID to view completed orders (or enter 0 to go back): ";
+        cin >> customerID;
+
+        // If the user enters 0, go back to the previous menu
+        if (customerID == 0) {
+            continueSearching = false;  // Exit the loop and return to the previous menu
+            break;
+        }
+
+        // Query to fetch order details for the given customer
+        string query = "SELECT o.orderID, o.orderDate, o.totalAmount, b.Title, bo.quantity, bo.price "
+            "FROM `order` o "
+            "JOIN `book_order` bo ON o.orderID = bo.orderID "
+            "JOIN `book` b ON bo.BookID = b.BookID "
+            "WHERE o.UserID = " + to_string(customerID) + " AND o.orderStatus = 'completed' "
+            "ORDER BY o.orderID";
+
+        int qstate = mysql_query(conn, query.c_str());
+
+        if (!qstate) {
+            MYSQL_RES* res = mysql_store_result(conn);
+            MYSQL_ROW row;
+
+            int currentOrderID = -1;
+            Table orderTable;
+
+            while ((row = mysql_fetch_row(res))) {
+                int orderID = stoi(row[0]);
+
+                // When a new order starts
+                if (orderID != currentOrderID) {
+                    // Print the table for the previous order if it exists
+                    if (currentOrderID != -1) {
+                        cout << orderTable << "\n\n";
+                    }
+
+                    cout << "+-------------------------------------------------------+\n";
+
+                    // Reset the table for the next order
+                    orderTable = Table();
+                    orderTable.add_row({ "Title", "Quantity", "Price (RM)" });
+                    orderTable[0]
+                        .format()
+                        .font_style({ FontStyle::bold })
+                        .font_color(Color::green);
+
+                    currentOrderID = orderID;
+
+                    // Print order-level information
+                    cout << "Order ID: " << row[0]
+                        << "\nOrder Date: " << row[1]
+                        << "\nTotal Amount: RM " << row[2] << "\n";
+                    cout << "Books in this order:\n";
+                }
+
+                // Add book information to the table
+                orderTable.add_row({
+                    row[3],                 // Book Title
+                    row[4],                 // Quantity
+                    row[5]                  // Price (RM)
+                    });
+            }
+
+            // Print the last order's table if it exists
+            if (currentOrderID != -1) {
+                cout << orderTable << "\n";
+            }
+            else {
+                cout << "\nNo completed orders found for this customer.\n";
+            }
+
+            mysql_free_result(res);
+        }
+        else {
+            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+        }
+
+        // Ask if the user wants to continue searching
+        char contChoice;
+        cout << "\nWould you like to search for another customer? (Y/N): ";
+        cin >> contChoice;
+
+        if (contChoice == 'Y' || contChoice == 'y') {
+            continueSearching = true;  // Continue searching for another customer
+        }
+        else if (contChoice == 'N' || contChoice == 'n') {
+            continueSearching = false; // Exit the loop
+        }
+        else {
+            cout << "\033[1;31mInvalid input! Please enter Y or N.\033[0m" << endl;
+        }
+    }
+}
+
 
 bool Admin::DisplayBooks(MYSQL* conn) {
     system("cls");
@@ -973,32 +1118,42 @@ void Admin::CustomerManagementMenu(MYSQL* conn) {
     do {
         system("cls");
         cout << "\n\t\t\t--- Customer Management ---\n";
-        cout << "1. View All Customers\n";
+        cout << "1. Search for Customers\n";
         cout << "2. View Completed Orders of a Customer\n";
         cout << "3. Back to Admin Menu\n";
+
+
         cout << "\nEnter your choice: ";
         cin >> choice;
 
+        if (!(cin >> choice)) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(1000, '\n'); 
+            cout << "\033[1;31mInvalid input! Please enter a valid number between 1 and 3.\033[0m" << endl;
+            continue;  // Ask the user to enter a valid choice again
+        }
+
+        // Handle invalid choice
+        if (choice < 1 || choice > 3) {
+            cout << "\033[1;31mInvalid choice! Please enter a number between 1 and 3.\033[0m" << endl;
+            continue;  // Ask the user to enter a valid choice again
+        }
+
         switch (choice) {
         case 1:
-            ViewCustomerInfo(conn);
+            ViewCustomerInfo(conn);  // Function to search for customers
             break;
         case 2: {
             system("cls");
-            int customerID;
-            cout << "\nEnter Customer ID: ";
-            cin >> customerID;
-            ViewCustomerOrders(conn, customerID);
+            ViewCustomerOrders(conn);  // Function to view completed orders
             break;
         }
         case 3:
             cout << "\nReturning to Admin Menu...\n";
             break;
-        default:
-            cout << "\nInvalid choice! Please try again.\n";
-            _getch();
+        default:break;
         }
-    } while (choice != 3);
+    } while (choice != 3);  // Keep looping until user chooses to exit
 }
 
 void Admin::viewReportGraph(MYSQL* conn) {
