@@ -642,8 +642,6 @@ void Admin::BookSalesReport(MYSQL* conn) {
     _getch();
 }
 
-
-
 void Admin::BookSalesInMonth(MYSQL* conn) {
     string month;
     cout << "Enter the month for the report (format: YYYY-MM): ";
@@ -699,9 +697,6 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
 
 void Admin::ViewCustomerInfo(MYSQL* conn)
 {
-    system("cls");
-    cout << "\n\t\t\t\t--- List of All Customers ---\n" << endl;
-
     // Check if the connection to the database is successful
     if (conn == nullptr) {
         cout << "\033[1;31mError: Database connection failed!\033[0m" << endl;
@@ -712,6 +707,7 @@ void Admin::ViewCustomerInfo(MYSQL* conn)
     bool continueSearching = true;
 
     while (continueSearching) {
+        system("cls");
         // Ask the user what to search by
         cout << "1. View all customers\n";
         cout << "2. Search by Name\n";
@@ -850,6 +846,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
     bool continueSearching = true;
 
     while (continueSearching) {
+        system("cls");
         cout << "\n\t\t\t--- View Completed Orders ---\n" << endl;
         cout << "Enter Customer ID to view completed orders (or enter 0 to go back): ";
         cin >> customerID;
@@ -1156,51 +1153,45 @@ void Admin::SearchBooks(MYSQL* conn) {
 }
 
 void Admin::CustomerManagementMenu(MYSQL* conn) {
-    int choice;
-    do {
+    while (true)
+    {
+        int choice;
         system("cls");
         cout << "\n\t\t\t--- Customer Management ---\n";
         cout << "1. Search for Customers\n";
         cout << "2. View Completed Orders of a Customer\n";
         cout << "3. Back to Admin Menu\n";
 
-
         cout << "\nEnter your choice: ";
         cin >> choice;
 
-        if (!(cin >> choice)) {
-            cin.clear(); // Clear the error flag
-            cin.ignore(1000, '\n'); 
+        if (!(cin >> choice) || choice < 1 || choice > 3) {
             cout << "\033[1;31mInvalid input! Please enter a valid number between 1 and 3.\033[0m" << endl;
+            cin.clear();  // Clear the error flag
+            cin.ignore(10000, '\n');  // Ignore any invalid input
+            _getch();
             continue;  // Ask the user to enter a valid choice again
         }
 
-        // Handle invalid choice
-        if (choice < 1 || choice > 3) {
-            cout << "\033[1;31mInvalid choice! Please enter a number between 1 and 3.\033[0m" << endl;
-            continue;  // Ask the user to enter a valid choice again
-        }
-
+        //cek balik
         switch (choice) {
         case 1:
             ViewCustomerInfo(conn);  // Function to search for customers
             break;
-        case 2: {
-            system("cls");
+        case 2:
             ViewCustomerOrders(conn);  // Function to view completed orders
             break;
-        }
         case 3:
             cout << "\nReturning to Admin Menu...\n";
+            return;
+        default:
             break;
-        default:break;
         }
-    } while (choice != 3);  // Keep looping until user chooses to exit
+    }
 }
 
-void Admin::viewReportGraph(MYSQL* conn) {
- 
-}
+
+
 
 
 

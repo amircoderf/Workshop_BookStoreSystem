@@ -942,127 +942,172 @@ void Customer::confirmOrder() {
 }
 
 void Customer::adjustItemQuantity() {
-    int bookID, newQuantity;
+    while (true) {
+        int bookID, newQuantity;
 
-    cout << "\nEnter the BookID to adjust quantity: ";
-    cin >> bookID;
-    cout << "Enter the new quantity (0 to remove): ";
-    cin >> newQuantity;
+        // Ask for the BookID
+        cout << "\nEnter the BookID to adjust quantity (or press Enter to cancel): ";
+        string bookIDInput;
+        cin.ignore();
+        getline(cin, bookIDInput);  // Use getline to handle empty inputs as well.
 
-    if (newQuantity < 0) {
-        cout << "Invalid quantity. Please enter 0 or a positive number." << endl;
-        _getch();
-        return;
-    }
+        // Check if the user pressed Enter (empty input), cancel the operation and return to the order cart
+        if (bookIDInput.empty()) {
+            cout << "Operation cancelled. Returning to the order cart.\n";
+            _getch();  // Wait for key press before returning to order cart
+            return;
+        }
 
-    // Query to check if the BookID exists in the current order cart
-    string checkQuery = "SELECT bo.quantity FROM book_order bo "
-        "JOIN `order` o ON bo.orderID = o.orderID "
-        "WHERE o.UserID = " + to_string(userID) +
-        " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
-    const char* checkQueryCStr = checkQuery.c_str();
+        // Convert input to integer
+        try {
+            bookID = stoi(bookIDInput);  // If conversion fails, it will throw an exception
+        }
+        catch (const invalid_argument& e) {
+            cout << "Invalid BookID. Please try again.\n";
+            continue;  // Restart the loop if BookID is invalid
+        }
 
-    if (mysql_query(conn, checkQueryCStr)) {
-        cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
-        _getch();
-        return;
-    }
+        cout << "Enter the new quantity (0 to remove, or press Enter to cancel): ";
+        string quantityInput;
+        cin.ignore(1000,'\n');
+        getline(cin, quantityInput);  // Use getline to handle empty input for quantity.
 
-    MYSQL_RES* res = mysql_store_result(conn);
-    if (res == nullptr || mysql_num_rows(res) == 0) {
-        cout << "BookID not found in the order cart." << endl;
-        mysql_free_result(res);
-        _getch();
-        return;
-    }
+        // If quantity input is empty, prompt user again to choose a BookID
+        if (quantityInput.empty()) {
+            cout << "Quantity input is empty. Returning to choose BookID.\n";
+            continue;  // Go back to input BookID again
+        }
 
-    MYSQL_ROW row = mysql_fetch_row(res);
-    int currentQuantityInCart = atoi(row[0]);  // Get the current quantity of the book in the cart
-    mysql_free_result(res);
+        // Convert quantity to integer
+        try {
+            newQuantity = stoi(quantityInput);  // If conversion fails, it will throw an exception
+        }
+        catch (const invalid_argument& e) {
+            cout << "Invalid quantity. Please enter a valid number.\n";
+            continue;  // Restart the loop if quantity is invalid
+        }
 
-    if (newQuantity == 0) {
-        // Remove the item from the cart
-        string deleteQuery = "DELETE bo FROM book_order bo "
+        if (newQuantity < 0) {
+            cout << "Invalid quantity. Please enter 0 or a positive number." << endl;
+            continue;  // Restart the loop if quantity is negative
+        }
+
+        // Query to check if the BookID exists in the current order cart
+        string checkQuery = "SELECT bo.quantity FROM book_order bo "
             "JOIN `order` o ON bo.orderID = o.orderID "
             "WHERE o.UserID = " + to_string(userID) +
             " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
-        const char* deleteQueryCStr = deleteQuery.c_str();
+        const char* checkQueryCStr = checkQuery.c_str();
 
-        if (mysql_query(conn, deleteQueryCStr)) {
-            cout << "Failed to remove item. Error Code: " << mysql_errno(conn) << endl;
+        if (mysql_query(conn, checkQueryCStr)) {
+            cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
+            _getch();
+            return;
+        }
+
+        MYSQL_RES* res = mysql_store_result(conn);
+        if (res == nullptr || mysql_num_rows(res) == 0) {
+            cout << "BookID not found in the order cart." << endl;
+            mysql_free_result(res);
+            _getch();
+            continue;  // Restart the loop if BookID is not found in the cart
+        }
+
+        MYSQL_ROW row = mysql_fetch_row(res);
+        int currentQuantityInCart = atoi(row[0]);  // Get the current quantity of the book in the cart
+        mysql_free_result(res);
+
+        if (newQuantity == 0) {
+            // Remove the item from the cart
+            string deleteQuery = "DELETE bo FROM book_order bo "
+                "JOIN `order` o ON bo.orderID = o.orderID "
+                "WHERE o.UserID = " + to_string(userID) +
+                " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
+            const char* deleteQueryCStr = deleteQuery.c_str();
+
+            if (mysql_query(conn, deleteQueryCStr)) {
+                cout << "Failed to remove item. Error Code: " << mysql_errno(conn) << endl;
+            }
+            else {
+                cout << "Item removed from the cart." << endl;
+            }
+
+            // Update the stock of the book in the `book` table
+            string updateStockQuery = "UPDATE book b "
+                "SET b.Stock = b.Stock + " + to_string(currentQuantityInCart) +  // Increase stock by the quantity in the cart
+                " WHERE b.BookID = " + to_string(bookID);
+            const char* updateStockQueryCStr = updateStockQuery.c_str();
+
+            if (mysql_query(conn, updateStockQueryCStr)) {
+                cout << "Failed to update book stock. Error Code: " << mysql_errno(conn) << endl;
+            }
+            else {
+                cout << "Book stock updated successfully." << endl;
+            }
         }
         else {
-            cout << "Item removed from the cart." << endl;
+            // Update the price and quantity of the item in the cart
+            string updateQuery = "UPDATE book_order bo "
+                "JOIN `order` o ON bo.orderID = o.orderID "
+                "JOIN book b ON bo.BookID = b.BookID "
+                "SET bo.quantity = " + to_string(newQuantity) +
+                ", bo.price = b.Price * " + to_string(newQuantity) +  // Update price based on quantity and book price
+                " WHERE o.UserID = " + to_string(userID) +
+                " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
+            const char* updateQueryCStr = updateQuery.c_str();
+
+            if (mysql_query(conn, updateQueryCStr)) {
+                cout << "Failed to update item quantity and price. Error Code: " << mysql_errno(conn) << endl;
+            }
+            else {
+                cout << "Item quantity updated to " << newQuantity << " and price updated based on current book price." << endl;
+            }
+
+            // Update the stock of the book in the `book` table (increase or decrease based on the quantity change)
+            int quantityDifference = newQuantity - currentQuantityInCart; // Calculate the difference in quantity
+            string updateStockQuery = "UPDATE book b "
+                "SET b.Stock = b.Stock - " + to_string(quantityDifference) +  // Adjust the stock based on the quantity change
+                " WHERE b.BookID = " + to_string(bookID);
+            const char* updateStockQueryCStr = updateStockQuery.c_str();
+
+            if (mysql_query(conn, updateStockQueryCStr)) {
+                cout << "Failed to update book stock. Error Code: " << mysql_errno(conn) << endl;
+            }
         }
 
-        // Update the stock of the book in the `book` table
-        string updateStockQuery = "UPDATE book b "
-            "SET b.Stock = b.Stock + " + to_string(currentQuantityInCart) +  // Increase stock by the quantity in the cart
-            " WHERE b.BookID = " + to_string(bookID);
-        const char* updateStockQueryCStr = updateStockQuery.c_str();
+        // Update the total price of the order
+        string updateTotalQuery = "UPDATE `order` o "
+            "JOIN (SELECT bo.orderID, SUM(bo.price) AS newTotal "
+            "      FROM book_order bo "
+            "      JOIN `order` o ON bo.orderID = o.orderID "
+            "      WHERE o.UserID = " + to_string(userID) +
+            "        AND o.orderStatus = 'pending' "
+            "      GROUP BY bo.orderID) AS updatedTotal "
+            "ON o.orderID = updatedTotal.orderID "
+            "SET o.totalAmount = updatedTotal.newTotal "
+            "WHERE o.UserID = " + to_string(userID) +
+            " AND o.orderStatus = 'pending';";
+        const char* updateTotalQueryCStr = updateTotalQuery.c_str();
 
-        if (mysql_query(conn, updateStockQueryCStr)) {
-            cout << "Failed to update book stock. Error Code: " << mysql_errno(conn) << endl;
+        if (mysql_query(conn, updateTotalQueryCStr)) {
+            cout << "Failed to update the total amount of the order. Error Code: " << mysql_errno(conn) << endl;
         }
         else {
-            cout << "Book stock updated successfully." << endl;
-        }
-    }
-    else {
-        // Update the price and quantity of the item in the cart
-        string updateQuery = "UPDATE book_order bo "
-            "JOIN `order` o ON bo.orderID = o.orderID "
-            "JOIN book b ON bo.BookID = b.BookID "
-            "SET bo.quantity = " + to_string(newQuantity) +
-            ", bo.price = b.Price * " + to_string(newQuantity) +  // Update price based on quantity and book price
-            " WHERE o.UserID = " + to_string(userID) +
-            " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
-        const char* updateQueryCStr = updateQuery.c_str();
-
-        if (mysql_query(conn, updateQueryCStr)) {
-            cout << "Failed to update item quantity and price. Error Code: " << mysql_errno(conn) << endl;
-        }
-        else {
-            cout << "Item quantity updated to " << newQuantity << " and price updated based on current book price." << endl;
+            cout << "Order total amount updated successfully." << endl;
         }
 
-        // Update the stock of the book in the `book` table (increase or decrease based on the quantity change)
-        int quantityDifference = newQuantity - currentQuantityInCart; // Calculate the difference in quantity
-        string updateStockQuery = "UPDATE book b "
-            "SET b.Stock = b.Stock - " + to_string(quantityDifference) +  // Adjust the stock based on the quantity change
-            " WHERE b.BookID = " + to_string(bookID);
-        const char* updateStockQueryCStr = updateStockQuery.c_str();
+        // Ask the user if they want to continue adjusting quantities
+        cout << "\nDo you want to adjust more items? (Y/N): ";
+        string continueInput;
+        getline(cin, continueInput);
 
-        if (mysql_query(conn, updateStockQueryCStr)) {
-            cout << "Failed to update book stock. Error Code: " << mysql_errno(conn) << endl;
+        if (continueInput.empty() || tolower(continueInput[0]) == 'n') {
+            cout << "Returning to the order cart.\n";
+            _getch();
+            return;  // Exit the loop and return to the order cart
         }
     }
-
-    // Update the total price of the order
-    string updateTotalQuery = "UPDATE `order` o "
-        "JOIN (SELECT bo.orderID, SUM(bo.price) AS newTotal "
-        "      FROM book_order bo "
-        "      JOIN `order` o ON bo.orderID = o.orderID "
-        "      WHERE o.UserID = " + to_string(userID) +
-        "        AND o.orderStatus = 'pending' "
-        "      GROUP BY bo.orderID) AS updatedTotal "
-        "ON o.orderID = updatedTotal.orderID "
-        "SET o.totalAmount = updatedTotal.newTotal "
-        "WHERE o.UserID = " + to_string(userID) +
-        " AND o.orderStatus = 'pending';";
-    const char* updateTotalQueryCStr = updateTotalQuery.c_str();
-
-    if (mysql_query(conn, updateTotalQueryCStr)) {
-        cout << "Failed to update the total amount of the order. Error Code: " << mysql_errno(conn) << endl;
-    }
-    else {
-        cout << "Order total amount updated successfully." << endl;
-    }
-
-    _getch();
 }
-
-
 
 void Customer::viewPastOrder() {
     while (true) {
