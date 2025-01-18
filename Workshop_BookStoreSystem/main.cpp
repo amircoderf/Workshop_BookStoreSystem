@@ -24,12 +24,12 @@ int main() {
     do {
         system("cls");
         setConsoleTextColor(9);  // Blue for main menu
-        cout << "==========================\n";
-        cout << "       Main Menu\n";
-        cout << "==========================\n\n";
+        cout << "======================================\n";
+        cout << "      WELCOME TO OUR BOOKSTORE\n";
+        cout << "======================================\n\n";
         setConsoleTextColor(7);  // Default color
-        cout << "1. Registration\n2. Log in\n3. Exit" << endl;
-        cout << "Please enter your choice: ";
+        cout << "1. Registration\n2. Log in\n3. Exit" << endl<<endl;
+        cout << "Enter your choice: ";
 
         while (true) {
             if (!(cin >> choice)) {
@@ -118,7 +118,7 @@ void LogIn(MYSQL* conn) {
             else if (role == "customer") {
                 customer.setDBConnection(conn);
                 customer.setUserId(userId);
-                customer.CustomerInteface(); // Pass UserID for customer actions
+                customer.CustomerInterface(); // Pass UserID for customer actions
             }
             else {
                 cout << "Unknown role. Please contact the administrator." << endl;

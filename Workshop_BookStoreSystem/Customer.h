@@ -22,7 +22,7 @@ public:
     void setUserId(int userID);
     void setDBConnection(MYSQL* conn);
     void CustomerRegistration(MYSQL* conn);
-    void CustomerInteface();
+    void CustomerInterface();
     void ViewBooks();
     void OrderCart();
     void chooseBooksToOrder();

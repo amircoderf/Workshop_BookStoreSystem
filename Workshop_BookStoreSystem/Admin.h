@@ -10,6 +10,7 @@
 #include <conio.h>
 #include <sstream>
 #include <regex>
+#include <iomanip>
 #include "SharedFunc.h"
 
 using namespace std;
@@ -19,6 +20,7 @@ private:
 	db_connection dbConn;
 public:
 	void AdminInterface(MYSQL* conn);
+	void BookManagementMenu(MYSQL* conn);
 	void AddBooks(MYSQL* conn);
 	void UpdateBooks(MYSQL* conn,const string& bookid);
 	void DeleteBooks(MYSQL* conn, const string& bookid);

@@ -3,21 +3,28 @@
 
 void Customer::CustomerRegistration(MYSQL* conn) {
     system("cls");
-    cout << "Customer Sign In" << endl;
-
+    setConsoleTextColor(14); // Yellow color for the title
+    cout << "=============================================" << endl;
+    cout << "           CUSTOMER REGISTRATION             " << endl;
+    cout << "=============================================" << endl;
+    setConsoleTextColor(7); // Reset to default color
 
     while (true) {
+        setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Name: ";
+        setConsoleTextColor(7); // Reset to default color
         cin.ignore();
         getline(cin, name);
 
         if (name.empty()) {
+            setConsoleTextColor(12); // Red color for error message
             cout << "Name cannot be empty. Please enter a valid name." << endl;
             continue;
         }
 
         // Check if name contains only valid characters (letters, spaces, and optionally '-' and "'")
         if (!regex_match(name, regex("^[A-Za-z\\s'-]+$"))) {
+            setConsoleTextColor(12); // Red color for error message
             cout << "Invalid name. Name can only contain letters, spaces, dashes (-), and apostrophes ('). Please try again." << endl;
             continue; // Ask for input again
         }
@@ -25,39 +32,50 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         break; // Exit the loop if the name is valid
     }
 
-
     while (true) {
+        setConsoleTextColor(11); // Cyan color for input prompt
         cout << "IC no (12 digits)[example:0102********]: ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, ic_no);
         if (ic_no.length() == 12 && isNumeric(ic_no)) {
             break;
         }
+        setConsoleTextColor(12); // Red color for error message
         cout << "Invalid input. Please enter exactly 12 digits for IC no." << endl;
     }
 
     while (true) {
+        setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Phone no(Ex.:0123456789): ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, phone_no);
-        if (phone_no.length()==10&&isNumeric(phone_no)) {
+        if (phone_no.length() == 10 && isNumeric(phone_no)) {
             break;
         }
+        setConsoleTextColor(12); // Red color for error message
         cout << "Invalid input. Please enter only 10 numbers for Phone no." << endl;
     }
 
+    setConsoleTextColor(11); // Cyan color for input prompt
     cout << "Address: ";
+    setConsoleTextColor(7); // Reset to default color
     getline(cin, address);
 
     while (true) {
+        setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Username: ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, cus_username);
 
         if (cus_username.length() < 5) {
+            setConsoleTextColor(12); // Red color for error message
             cout << "Invalid input. Username must be at least 5 characters long." << endl;
             continue;
         }
 
         // Use the usernameExists function to check if the username is already taken
         if (usernameExists(cus_username)) {
+            setConsoleTextColor(12); // Red color for error message
             cout << "This username is already taken. Please try a different one." << endl;
         }
         else {
@@ -65,44 +83,58 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         }
     }
 
+    setConsoleTextColor(11); // Cyan color for input prompt
     cout << "Enter password (at least 6 characters, combination of letters and numbers): ";
+    setConsoleTextColor(7); // Reset to default color
     getline(cin, cus_password);
 
     // Check if the password meets the minimum length and contains both letters and numbers
     while (cus_password.length() < 6 || !regex_match(cus_password, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
+        setConsoleTextColor(12); // Red color for error message
         cout << "Password must be at least 6 characters long and contain both letters and numbers. Please try again: ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, cus_password);
     }
 
     // Ask the user to re-enter the password for confirmation
     string confirmPassword;
+    setConsoleTextColor(11); // Cyan color for input prompt
     cout << "Re-enter password to confirm: ";
+    setConsoleTextColor(7); // Reset to default color
     getline(cin, confirmPassword);
 
     // Check if both passwords match
     while (cus_password != confirmPassword) {
+        setConsoleTextColor(12); // Red color for error message
         cout << "Passwords do not match. Please re-enter the password: ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, cus_password);
+        setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Re-enter password to confirm: ";
+        setConsoleTextColor(7); // Reset to default color
         getline(cin, confirmPassword);
     }
 
     // Once passwords are confirmed, hash the password
     string hash = BCrypt::generateHash(cus_password);
 
-    string insert_query ="INSERT INTO USER (Name, IC_no, Phone_no, Address, username, password, Role) "
-                         "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address +"', '" + cus_username + "', '" + hash + "', 'customer')";
+    string insert_query = "INSERT INTO USER (Name, IC_no, Phone_no, Address, username, password, Role) "
+        "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address + "', '" + cus_username + "', '" + hash + "', 'customer')";
 
     const char* q = insert_query.c_str();
 
     int qstate = mysql_query(conn, q);
 
     if (!qstate) {
+        setConsoleTextColor(10); // Green color for success message
         cout << endl << "Customer has been successfully added to the database." << endl;
     }
     else {
+        setConsoleTextColor(12); // Red color for error message
         cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
     }
+
+    setConsoleTextColor(7); // Reset to default color
     _getch();
 }
 
@@ -114,43 +146,101 @@ void Customer::setUserId(int userID) {
     this->userID = userID;  // Store userID in the class to avoid passing it around
 }
 
-void Customer::CustomerInteface() {
+void Customer::CustomerInterface() {
     int choice;
+    char confirmLogout;
+
+    string username;
+    string query = "SELECT Username FROM user WHERE UserID = " + to_string(userID);
+    if (mysql_query(conn, query.c_str())) {
+        cerr << "Error fetching username: " << mysql_error(conn) << endl;
+        username = "Customer"; // Default value if username cannot be fetched
+    }
+    else {
+        MYSQL_RES* res = mysql_store_result(conn);
+        if (res && mysql_num_rows(res) > 0) {
+            MYSQL_ROW row = mysql_fetch_row(res);
+            username = row[0]; // Get the username from the result
+        }
+        else {
+            username = "Customer"; // Default value if no rows are returned
+        }
+        mysql_free_result(res);
+    }
 
     do {
         system("cls");
+        setConsoleTextColor(14);
         cout << "===================================================================================" << endl;
-        cout << "                                 Customer Menu                                     " << endl;
+        cout << "                                 CUSTOMER MENU                                     " << endl;
         cout << "===================================================================================" << endl;
-        cout << "Welcome, CUSTOMER" << endl << endl;
+        setConsoleTextColor(7);
+
+        setConsoleTextColor(11);
+        cout << "\t\t\t     WELCOME, "<<username << endl << endl;
         cout << "1. My Profile" << endl;
         cout << "2. View Books" << endl;
-        cout << "3. View Order Cart" << endl; 
+        cout << "3. View Order Cart" << endl;
         cout << "4. View Past Orders" << endl;
-        cout << "0. Exit" << endl << endl;
+        cout << "0. Logout" << endl << endl;
+        setConsoleTextColor(7);
+
         cout << "What would you like to do? ";
 
-        // Input validation for menu choice
         while (true) {
             if (!(cin >> choice) || choice < 0 || choice > 4) {
-                cout << "Invalid input. Please enter a number between 0 and 3: ";
-                cin.clear();  // Clear the error flag
-                cin.ignore(10000, '\n');  // Ignore any invalid input
+                setConsoleTextColor(12);
+                cout << "Invalid input. Please enter a number between 0 and 4: ";
+                setConsoleTextColor(7);
+                cin.clear();
+                cin.ignore(10000, '\n');
             }
             else {
-                break;  // Valid input, break the loop
+                break;
             }
         }
 
-        // Handle user choice
         switch (choice) {
         case 0:
-            return;  // Exit the program
+            system("cls");
+            while (true) {
+                setConsoleTextColor(14);
+                cout << "Are you sure you want to log out? (Y/N): ";
+                setConsoleTextColor(7);
+                cin >> confirmLogout;
+                cin.ignore(10000, '\n');
+
+                confirmLogout = toupper(confirmLogout);
+
+                if (confirmLogout == 'Y' || confirmLogout == 'N') {
+                    break;
+                }
+                else {
+                    setConsoleTextColor(12);
+                    cout << "Invalid input. Please enter 'Y' or 'N'." << endl;
+                    setConsoleTextColor(7);
+                }
+            }
+
+            if (confirmLogout == 'Y') {
+                setConsoleTextColor(10);
+                cout << "Logging out... Goodbye!" << endl;
+                setConsoleTextColor(7);
+                this_thread::sleep_for(chrono::seconds(1));
+                return;
+            }
+            else {
+                setConsoleTextColor(11);
+                cout << "Logout canceled. Returning to the customer menu..." << endl;
+                setConsoleTextColor(7);
+                this_thread::sleep_for(chrono::seconds(1));
+            }
+            break;
         case 1:
             myProfile();
             break;
         case 2:
-            ViewBooks();  // View available books
+            ViewBooks();
             break;
         case 3:
             OrderCart();
@@ -159,11 +249,9 @@ void Customer::CustomerInteface() {
             viewPastOrder();
             break;
         default:
-            cout << "Invalid choice. Please try again." << endl;
-            _getch();
             break;
         }
-    } while (choice != 0);
+    } while (true);
 }
 
 void Customer::ViewBooks()

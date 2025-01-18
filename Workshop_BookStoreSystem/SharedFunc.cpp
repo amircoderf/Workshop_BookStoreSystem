@@ -37,8 +37,6 @@ string getHiddenInput() {
     return input;
 }
 
-
-
 void setConsoleTextColor(int color) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, color);
@@ -127,3 +125,4 @@ void cartTableFormat(Table table) {
         .corner("+");
     table[0].format().font_color(Color::white).font_background_color(Color::blue);
 }
+
