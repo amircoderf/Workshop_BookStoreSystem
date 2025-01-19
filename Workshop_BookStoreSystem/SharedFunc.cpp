@@ -9,8 +9,6 @@ bool isNumeric(const string& str) {
     return true;
 }
 
-
-
 string getHiddenInput() {
     string input;
     char ch;

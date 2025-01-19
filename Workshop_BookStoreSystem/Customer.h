@@ -18,8 +18,7 @@ private:
     string ic_no, phone_no, name, address, cus_username, cus_password;
     int user_id;
 
-public:
-    
+public:    
     void SetUserId(int user_id);
     void SetDBConnection(MYSQL* conn);
     void CustomerRegistration(MYSQL* conn);

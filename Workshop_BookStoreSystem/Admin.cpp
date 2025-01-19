@@ -262,6 +262,33 @@ void Admin::AddBooks(MYSQL* conn) {
     double price;
     int stock;
 
+    auto confirmCancel = []() -> bool {
+        while (true) {
+            cout << "\n=============================================================================\n";
+            cout << "Are you sure you want to return to the menu? (Y for yes / N for no): ";
+            string confirm;
+            getline(cin, confirm);
+            cout << "==============================================================================\n";
+
+            // Trim leading and trailing spaces
+            confirm.erase(0, confirm.find_first_not_of(' '));
+            confirm.erase(confirm.find_last_not_of(' ') + 1);
+
+            if (confirm == "Y" || confirm == "y") {
+                return true;  // User confirmed
+            }
+            else if (confirm == "N" || confirm == "n") {
+                return false; // User declined
+            }
+            else {
+                // Handle invalid input
+                cout << "Invalid input. Please enter 'Y' for yes or 'N' for no." << endl;
+                cout << "Press any key to try again...";
+                cin.get();
+            }
+        }
+        };
+
     do {
         system("cls");
         setConsoleTextColor(11); // Light cyan color
@@ -270,20 +297,30 @@ void Admin::AddBooks(MYSQL* conn) {
         cout << "=============================================\n";
         setConsoleTextColor(7); // Reset to default color
 
+        // Display /cancel option in a visually appealing box
+        setConsoleTextColor(12); // Red color for emphasis
+        cout << "+--------------------------------------------+\n";
+        cout << "| You can type '/cancel' at any time to exit.|\n";
+        cout << "+--------------------------------------------+\n";
+        setConsoleTextColor(7); // Reset to default color
+
+        // ISBN Input
         while (true) {
             setConsoleTextColor(14); // Yellow color for input prompts
-            cout << "Enter ISBN (or type '/cancel' to exit): ";
+            cout << "Enter ISBN (13 digits) : ";
             setConsoleTextColor(7); // Reset to default color
             cin >> isbn;
 
             if (isbn == "/cancel") {
-                setConsoleTextColor(12); // Red color for cancellation message
-                cout << "Operation cancelled by user.\n";
-                setConsoleTextColor(7); // Reset to default color
-                return;
+                if (confirmCancel()) {
+                    return;
+                }
+                else {
+                    continue; 
+                }
             }
 
-            // Check if input is numeric and exactly 13 digits long
+            // Validate ISBN (must be 13 digits and numeric)
             if (isNumeric(isbn) && isbn.length() == 13) {
                 // Check if ISBN already exists in the database
                 string check_query = "SELECT ISBN FROM BOOK WHERE ISBN = '" + isbn + "'";
@@ -294,19 +331,19 @@ void Admin::AddBooks(MYSQL* conn) {
                             mysql_free_result(res);
                             setConsoleTextColor(12); // Red color for error message
                             cout << "ISBN already exists in the database. Please enter a different ISBN.\n";
-                            setConsoleTextColor(7); // Reset to default color
-                            continue; // Prompt the user to enter another ISBN
+                            setConsoleTextColor(7); 
+                            continue; 
                         }
                         else {
                             mysql_free_result(res);
-                            break; // Exit the loop if ISBN is unique
+                            break; 
                         }
                     }
                 }
                 else {
                     setConsoleTextColor(12); // Red color for error message
                     cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-                    setConsoleTextColor(7); // Reset to default color
+                    setConsoleTextColor(7); 
                     return;
                 }
             }
@@ -319,31 +356,38 @@ void Admin::AddBooks(MYSQL* conn) {
 
         // Title Input
         setConsoleTextColor(14); // Yellow color for input prompts
-        cout << "Title of the book (or type '/cancel' to exit): ";
+        cout << "Title of the book : ";
         setConsoleTextColor(7); // Reset to default color
         cin.ignore();
         getline(cin, title);
 
         if (title == "/cancel") {
-            setConsoleTextColor(12); // Red color for cancellation message
-            cout << "Operation cancelled by user.\n";
-            setConsoleTextColor(7); // Reset to default color
-            return;
+            if (confirmCancel()) {
+                return;
+            }
+            else {
+                continue; // Go back to the input prompt
+            }
         }
 
         // Price Input
         while (true) {
             setConsoleTextColor(14); // Yellow color for input prompts
-            cout << "Price of the book (RM) (or type '/cancel' to exit): ";
-            setConsoleTextColor(7); // Reset to default color
+            cout << "Price of the book (RM) : ";
+            setConsoleTextColor(7); 
             string priceInput;
             cin >> priceInput;
 
             if (priceInput == "/cancel") {
-                setConsoleTextColor(12); // Red color for cancellation message
-                cout << "Operation cancelled by user.\n";
-                setConsoleTextColor(7); // Reset to default color
-                return;
+                if (confirmCancel()) {
+                    setConsoleTextColor(12); // Red color for cancellation message
+                    cout << "Operation cancelled by user.\n";
+                    setConsoleTextColor(7); 
+                    return;
+                }
+                else {
+                    continue; 
+                }
             }
 
             try {
@@ -352,31 +396,33 @@ void Admin::AddBooks(MYSQL* conn) {
                     break;
                 }
                 else {
-                    setConsoleTextColor(12); // Red color for error message
+                    setConsoleTextColor(12); 
                     cout << "Invalid input. Price cannot be negative.\n";
-                    setConsoleTextColor(7); // Reset to default color
+                    setConsoleTextColor(7); 
                 }
             }
             catch (invalid_argument&) {
-                setConsoleTextColor(12); // Red color for error message
+                setConsoleTextColor(12); 
                 cout << "Invalid input. Please enter a valid price.\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
             }
         }
 
         // Stock Input
         while (true) {
-            setConsoleTextColor(14); // Yellow color for input prompts
-            cout << "Stock (or type '/cancel' to exit): ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(14);
+            cout << "Stock : ";
+            setConsoleTextColor(7);
             string stockInput;
             cin >> stockInput;
 
             if (stockInput == "/cancel") {
-                setConsoleTextColor(12); // Red color for cancellation message
-                cout << "Operation cancelled by user.\n";
-                setConsoleTextColor(7); // Reset to default color
-                return;
+                if (confirmCancel()) {
+                    return;
+                }
+                else {
+                    continue; 
+                }
             }
 
             try {
@@ -385,65 +431,80 @@ void Admin::AddBooks(MYSQL* conn) {
                     break;
                 }
                 else {
-                    setConsoleTextColor(12); // Red color for error message
+                    setConsoleTextColor(12); 
                     cout << "Invalid input. Stock cannot be negative.\n";
-                    setConsoleTextColor(7); // Reset to default color
+                    setConsoleTextColor(7);
                 }
             }
             catch (invalid_argument&) {
-                setConsoleTextColor(12); // Red color for error message
+                setConsoleTextColor(12); 
                 cout << "Invalid input. Please enter a valid stock value.\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
             }
         }
 
         // Author Input
-        setConsoleTextColor(14); // Yellow color for input prompts
-        cout << "Author of the book (or type '/cancel' to exit): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(14); 
+        cout << "Author of the book : ";
+        setConsoleTextColor(7); 
         cin.ignore();
         getline(cin, author);
 
         if (author == "/cancel") {
-            setConsoleTextColor(12); // Red color for cancellation message
-            cout << "Operation cancelled by user.\n";
-            setConsoleTextColor(7); // Reset to default color
-            return;
+            if (confirmCancel()) {
+                setConsoleTextColor(12); 
+                cout << "Operation cancelled by user.\n";
+                setConsoleTextColor(7);
+                return;
+            }
+            else {
+                continue; 
+            }
         }
 
         // Publisher Input
-        setConsoleTextColor(14); // Yellow color for input prompts
-        cout << "Publisher of the book (or type '/cancel' to exit): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(14); 
+        cout << "Publisher of the book : ";
+        setConsoleTextColor(7); 
         getline(cin, publisher);
 
         if (publisher == "/cancel") {
-            setConsoleTextColor(12); // Red color for cancellation message
-            cout << "Operation cancelled by user.\n";
-            setConsoleTextColor(7); // Reset to default color
-            return;
+            if (confirmCancel()) {
+                setConsoleTextColor(12);
+                cout << "Operation cancelled by user.\n";
+                setConsoleTextColor(7); 
+                return;
+            }
+            else {
+                continue; 
+            }
         }
 
         // Published Year Input
         while (true) {
-            setConsoleTextColor(14); // Yellow color for input prompts
-            cout << "Published Year (or type '/cancel' to exit): ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(14); 
+            cout << "Published Year (4 digits) : ";
+            setConsoleTextColor(7); 
             cin >> publishedYear;
 
             if (publishedYear == "/cancel") {
-                setConsoleTextColor(12); // Red color for cancellation message
-                cout << "Operation cancelled by user.\n";
-                setConsoleTextColor(7); // Reset to default color
-                return;
+                if (confirmCancel()) {
+                    setConsoleTextColor(12); 
+                    cout << "Operation cancelled by user.\n";
+                    setConsoleTextColor(7);
+                    return;
+                }
+                else {
+                    continue;
+                }
             }
 
             if (isNumeric(publishedYear) && publishedYear.length() == 4) {
                 break;
             }
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Invalid input. Please enter a valid 4-digit year.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
 
         // Insert into Database
@@ -453,20 +514,20 @@ void Admin::AddBooks(MYSQL* conn) {
         if (mysql_query(conn, insert_query.c_str()) == 0) {
             setConsoleTextColor(10); // Green color for success message
             cout << "\nBook has been successfully added to the database.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
         else {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
 
         // Ask if the user wants to add another book
         char choice;
         while (true) {
-            setConsoleTextColor(14); // Yellow color for input prompts
+            setConsoleTextColor(14);
             cout << "Do you want to input another book? (y/n): ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             cin >> choice;
 
             choice = tolower(choice);
@@ -474,9 +535,9 @@ void Admin::AddBooks(MYSQL* conn) {
                 break; // Exit loop if valid input
             }
 
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Invalid input. Please enter 'y' for yes or 'n' for no.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
 
         if (tolower(choice) == 'n') {
@@ -906,154 +967,154 @@ void displayBarChart(const vector<string>& salesMonths, const vector<double>& to
 }
 
 void Admin::MonthlySalesReport(MYSQL* conn) {
-    system("cls");
-    int year;
     while (true) {
-        cout << "Enter the year for the sales report (e.g., 2025): ";
-        if (cin >> year) {
-            // Check if the year is within a reasonable range
-            if (year >= 2000 && year <= 2100) {
-                break;
+        system("cls");
+        string input;
+        int year;
+
+        // Prompt for the year
+        while (true) {
+            cout << "Enter the year for the sales report (e.g., 2025) or 'B' to return to the report menu: ";
+            cin >> input;
+
+            // Check if the user wants to go back
+            if (tolower(input[0]) == 'b') {
+                return; // Exit the function to go back to the report menu
             }
-            else {
+
+            // Validate year input
+            try {
+                year = stoi(input);
+                if (year >= 2000 && year <= 2100) {
+                    break; // Valid year
+                }
+                else {
+                    setConsoleTextColor(12);
+                    cout << "Invalid year. Please enter a year between 2000 and 2100." << endl;
+                    setConsoleTextColor(7);
+                }
+            }
+            catch (...) {
                 setConsoleTextColor(12);
-                cout << "Invalid year. Please enter a year between 2000 and 2100." << endl;
+                cout << "Invalid input. Please enter a valid year (e.g., 2025) or 'B' to go back." << endl;
                 setConsoleTextColor(7);
             }
         }
-        else {
-            setConsoleTextColor(12); // Red for error message
-            cout << "Invalid input. Please enter a valid year (e.g., 2025)." << endl;
-            setConsoleTextColor(7); // Reset to default color
-            cin.clear();
-            cin.ignore(10000, '\n');
-        }
-    }
 
-    // Query to fetch sales data for the selected year and December of the previous year
-    string query = "SELECT DATE_FORMAT(o.orderDate, '%Y-%m') AS Sales_Month, "
-        "SUM(bo.price) AS Total_Sales "
-        "FROM book_order bo "
-        "JOIN `order` o ON bo.orderID = o.orderID "
-        "WHERE o.orderStatus = 'completed' AND "
-        "(YEAR(o.orderDate) = " + to_string(year) + " OR "
-        "(YEAR(o.orderDate) = " + to_string(year - 1) + " AND MONTH(o.orderDate) = 12)) "
-        "GROUP BY Sales_Month "
-        "ORDER BY Sales_Month ASC;";
+        // Query to fetch sales data
+        string query = "SELECT DATE_FORMAT(o.orderDate, '%Y-%m') AS Sales_Month, "
+            "SUM(bo.price) AS Total_Sales "
+            "FROM book_order bo "
+            "JOIN `order` o ON bo.orderID = o.orderID "
+            "WHERE o.orderStatus = 'completed' AND "
+            "(YEAR(o.orderDate) = " + to_string(year) + " OR "
+            "(YEAR(o.orderDate) = " + to_string(year - 1) + " AND MONTH(o.orderDate) = 12)) "
+            "GROUP BY Sales_Month "
+            "ORDER BY Sales_Month ASC;";
 
-    if (mysql_query(conn, query.c_str())) {
-        cerr << "Query execution failed: " << mysql_error(conn) << endl;
-        _getch();
-        return;
-    }
-
-    MYSQL_RES* result = mysql_store_result(conn);
-    if (!result) {
-        cerr << "Failed to store result: " << mysql_error(conn) << endl;
-        _getch();
-        return;
-    }
-
-    // Vectors to hold months, sales, and percentage changes
-    vector<string> salesMonths;
-    vector<double> totalSales;
-    vector<string> percentageChanges;
-
-    MYSQL_ROW row;
-    double decemberPreviousYearSales = 0.0; // Store sales for December of the previous year
-    bool isFirstMonth = true;
-
-    while ((row = mysql_fetch_row(result))) {
-        string salesMonth = row[0];
-        double totalSalesAmount = atof(row[1]); // Total sales value
-
-        // Check if this is December of the previous year
-        bool isDecemberPreviousYear = (salesMonth.substr(0, 4) == to_string(year - 1) && salesMonth.substr(5, 2) == "12");
-
-        if (isDecemberPreviousYear) {
-            // Store December's sales for calculating the percentage change for January
-            decemberPreviousYearSales = totalSalesAmount;
-            continue; // Skip adding December to the display vectors
+        if (mysql_query(conn, query.c_str())) {
+            cerr << "Query execution failed: " << mysql_error(conn) << endl;
+            _getch();
+            continue;
         }
 
-        // Convert numeric month to month name (e.g., "01" -> "January")
-        string monthName = getMonthName(salesMonth.substr(5, 2));
+        MYSQL_RES* result = mysql_store_result(conn);
+        if (!result) {
+            cerr << "Failed to store result: " << mysql_error(conn) << endl;
+            _getch();
+            continue;
+        }
 
-        salesMonths.push_back(monthName);
-        totalSales.push_back(totalSalesAmount);
+        // Vectors to hold months, sales, and percentage changes
+        vector<string> salesMonths;
+        vector<double> totalSales;
+        vector<string> percentageChanges;
 
-        // Calculate percentage change
-        string percentageChange = "N/A"; // Default for the first month
-        if (isFirstMonth) {
-            // For January, calculate percentage change relative to December of the previous year
-            if (decemberPreviousYearSales > 0) { // Ensure December data is available
-                double change = ((totalSalesAmount - decemberPreviousYearSales) / decemberPreviousYearSales) * 100;
-                if (change >= 0) {
-                    percentageChange = "Increases by " + to_string(change).substr(0, to_string(change).find(".") + 3) + "%";
-                }
-                else {
-                    percentageChange = "Decreases by " + to_string(abs(change)).substr(0, to_string(abs(change)).find(".") + 3) + "%";
-                }
+        MYSQL_ROW row;
+        double decemberPreviousYearSales = 0.0;
+        bool isFirstMonth = true;
+
+        while ((row = mysql_fetch_row(result))) {
+            string salesMonth = row[0];
+            double totalSalesAmount = atof(row[1]);
+
+            // Check if this is December of the previous year
+            bool isDecemberPreviousYear = (salesMonth.substr(0, 4) == to_string(year - 1) && salesMonth.substr(5, 2) == "12");
+
+            if (isDecemberPreviousYear) {
+                decemberPreviousYearSales = totalSalesAmount;
+                continue;
             }
-        }
-        else {
-            // For subsequent months, calculate percentage change relative to the previous month
-            double change = ((totalSalesAmount - totalSales[totalSales.size() - 2]) / totalSales[totalSales.size() - 2]) * 100;
-            if (change >= 0) {
-                percentageChange = "Increases by " + to_string(change).substr(0, to_string(change).find(".") + 3) + "%";
+
+            string monthName = getMonthName(salesMonth.substr(5, 2));
+            salesMonths.push_back(monthName);
+            totalSales.push_back(totalSalesAmount);
+
+            string percentageChange = "N/A";
+            if (isFirstMonth) {
+                if (decemberPreviousYearSales > 0) {
+                    double change = ((totalSalesAmount - decemberPreviousYearSales) / decemberPreviousYearSales) * 100;
+                    percentageChange = change >= 0 ? "Increases by " + to_string(change).substr(0, to_string(change).find(".") + 3) + "%"
+                        : "Decreases by " + to_string(abs(change)).substr(0, to_string(abs(change)).find(".") + 3) + "%";
+                }
             }
             else {
-                percentageChange = "Decreases by " + to_string(abs(change)).substr(0, to_string(abs(change)).find(".") + 3) + "%";
+                double change = ((totalSalesAmount - totalSales[totalSales.size() - 2]) / totalSales[totalSales.size() - 2]) * 100;
+                percentageChange = change >= 0 ? "Increases by " + to_string(change).substr(0, to_string(change).find(".") + 3) + "%"
+                    : "Decreases by " + to_string(abs(change)).substr(0, to_string(abs(change)).find(".") + 3) + "%";
             }
-        }
-        percentageChanges.push_back(percentageChange);
-
-        isFirstMonth = false;
-    }
-
-    mysql_free_result(result);
-
-    // Toggle between table and bar chart
-    bool showTable = true; // Start by showing the table
-    while (true) {
-        system("cls");
-
-        if (showTable) {
-            displayTable(salesMonths, totalSales, percentageChanges, year);
-        }
-        else {
-            displayBarChart(salesMonths, totalSales);
+            percentageChanges.push_back(percentageChange);
+            isFirstMonth = false;
         }
 
-        // Instructions for toggling
-        setConsoleTextColor(14); // Yellow for instructions
-        cout << "\nPress 'T' to view the Table, 'C' to view the Bar Graph, or 'Q' to quit...\n";
-        setConsoleTextColor(7); // Reset to default color
+        mysql_free_result(result);
 
-        char choice = _getch();
-        choice = tolower(choice);
+        // Toggle between table and bar chart
+        bool showTable = true;
+        while (true) {
+            system("cls");
 
-        if (choice == 't') {
-            showTable = true;
-        }
-        else if (choice == 'c') {
-            showTable = false;
-        }
-        else if (choice == 'q') {
-            break; // Exit the loop and return to the menu
+            if (showTable) {
+                displayTable(salesMonths, totalSales, percentageChanges, year);
+            }
+            else {
+                displayBarChart(salesMonths, totalSales);
+            }
+
+            setConsoleTextColor(14);
+            cout << "\nPress 'T' to view the Table, 'C' to view the Bar Graph, 'B' to input another year, or 'Q' to quit...\n";
+            setConsoleTextColor(7);
+
+            char choice = _getch();
+            choice = tolower(choice);
+
+            if (choice == 't') {
+                showTable = true;
+            }
+            else if (choice == 'c') {
+                showTable = false;
+            }
+            else if (choice == 'b') {
+                break; // Return to year input
+            }
+            else if (choice == 'q') {
+                return; // Exit the function
+            }
         }
     }
 }
 
 void Admin::BookSalesReport(MYSQL* conn) {
     system("cls");
+
+    // Query to fetch book sales data
     string query = "SELECT b.Title AS Book_Title, "
-        "SUM(bo.quantity) AS Total_Quantity_Sold, "
-        "SUM(bo.price) AS Total_Sales "
-        "FROM book_order bo "
-        "JOIN book b ON bo.BookID = b.BookID "
-        "GROUP BY b.BookID "
-        "ORDER BY Total_Sales DESC;";
+                   "SUM(bo.quantity) AS Total_Quantity_Sold, "
+                   "SUM(bo.price) AS Total_Sales "
+                   "FROM book_order bo "
+                   "JOIN book b ON bo.BookID = b.BookID "
+                   "GROUP BY b.BookID "
+                   "ORDER BY Total_Sales DESC;";
 
     if (mysql_query(conn, query.c_str())) {
         cerr << "Query execution failed: " << mysql_error(conn) << endl;
@@ -1102,6 +1163,20 @@ void Admin::BookSalesReport(MYSQL* conn) {
         bookSalesTable.add_row({ bookTitle, std::to_string(quantitySold), salesStream.str(), percentageStream.str() });
     }
 
+    // Display the title and description above the table
+    setConsoleTextColor(14); // Yellow color for the title
+    cout << "======================================================================\n";
+    cout << "                     BOOK SALES PERFORMANCE REPORT         \n";
+    cout << "======================================================================\n";
+    setConsoleTextColor(7); // Reset to default color
+
+    setConsoleTextColor(11); // Cyan color for the description
+    cout << "This report provides insights into the sales performance of books.\n";
+    cout << "It includes the total quantity sold, total sales revenue, and the\n";
+    cout << "popularity percentage of each book based on the total quantity sold.\n";
+    cout << "======================================================================\n";
+    setConsoleTextColor(7); // Reset to default color
+
     // Format and display the report table
     reportTableFormat(bookSalesTable);
     cout << bookSalesTable << endl;
@@ -1112,57 +1187,130 @@ void Admin::BookSalesReport(MYSQL* conn) {
 }
 
 void Admin::BookSalesInMonth(MYSQL* conn) {
-    system("cls");
-    string month;
-    cout << "Enter the month for the report (format: YYYY-MM): ";
-    cin >> month;
+    while (true) {
+        system("cls");
 
-    regex month_format("^\\d{4}-(0[1-9]|1[0-2])$");
-    if (!regex_match(month, month_format)) {
-        cerr << "Invalid month format. Please use YYYY-MM." << endl;
-        cout << "\nPress any key to return to the menu...";
-        _getch();
-        return;
+        // Display the title and description
+        setConsoleTextColor(14); // Yellow color for the title
+        cout << "===================================================================\n";
+        cout << "              MONTHLY BOOK SALES REPORT             \n";
+        cout << "===================================================================\n";
+        setConsoleTextColor(7); // Reset to default color
+
+        setConsoleTextColor(11); // Cyan color for the description
+        cout << "This report shows the total quantity sold and total sales revenue\n";
+        cout << "for each book in the selected month.\n";
+        cout << "===================================================================\n\n";
+        setConsoleTextColor(7); // Reset to default color
+
+        string month;
+
+        // Prompt for the month
+        setConsoleTextColor(14); // Yellow color for input prompt
+        cout << "Enter the month for the report (format: YYYY-MM) or 'B' to return to the report menu: ";
+        setConsoleTextColor(7); // Reset to default color
+        cin >> month;
+
+        // Check if the user wants to go back to the report menu
+        if (tolower(month[0]) == 'b') {
+            // Confirmation prompt for exit
+            setConsoleTextColor(12); // Red color for emphasis
+            cout << "\nAre you sure you want to return to the report menu? (Y/N): ";
+            setConsoleTextColor(7); // Reset to default color
+            char confirm;
+            cin >> confirm;
+            if (tolower(confirm) == 'y') {
+                return; // Exit the function to return to the report menu
+            }
+            else {
+                continue; // Restart the loop
+            }
+        }
+
+        // Validate month format
+        regex month_format("^\\d{4}-(0[1-9]|1[0-2])$");
+        if (!regex_match(month, month_format)) {
+            setConsoleTextColor(12); // Red color for error message
+            cerr << "Invalid month format. Please use YYYY-MM." << endl;
+            setConsoleTextColor(7); // Reset to default color
+            cout << "\nPress any key to try again...";
+            _getch();
+            continue; // Restart the loop to prompt again
+        }
+
+        // Query to fetch book sales data for the selected month
+        string query = "SELECT b.Title AS Book_Title, "
+            "SUM(bo.quantity) AS Total_Quantity_Sold, "
+            "SUM(bo.price) AS Total_Sales "
+            "FROM book_order bo "
+            "JOIN book b ON bo.BookID = b.BookID "
+            "JOIN `order` o ON bo.orderID = o.orderID "
+            "WHERE o.orderStatus = 'completed' "
+            "AND DATE_FORMAT(o.orderDate, '%Y-%m') = '" + month + "' "
+            "GROUP BY b.BookID "
+            "ORDER BY Total_Sales DESC;";
+
+        if (mysql_query(conn, query.c_str())) {
+            setConsoleTextColor(12); // Red color for error message
+            cerr << "Query execution failed: " << mysql_error(conn) << endl;
+            setConsoleTextColor(7); // Reset to default color
+            cout << "\nPress any key to try again...";
+            _getch();
+            continue; // Restart the loop
+        }
+
+        MYSQL_RES* result = mysql_store_result(conn);
+        if (!result) {
+            setConsoleTextColor(12); // Red color for error message
+            cerr << "Failed to store result: " << mysql_error(conn) << endl;
+            setConsoleTextColor(7); // Reset to default color
+            cout << "\nPress any key to try again...";
+            _getch();
+            continue; // Restart the loop
+        }
+
+        // Display the selected month
+        setConsoleTextColor(14); // Yellow color for emphasis
+        cout << "\n===================================================================\n";
+        cout << "              Book Sales Report for " << month << "\n";
+        cout << "=====================================================================\n";
+        setConsoleTextColor(7); // Reset to default color
+
+        // Display the results in a table format
+        Table monthlyBookSalesTable;
+        monthlyBookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
+
+        MYSQL_ROW row;
+        bool hasData = false;
+        while ((row = mysql_fetch_row(result))) {
+            hasData = true;
+            monthlyBookSalesTable.add_row({ row[0], row[1], row[2] });
+        }
+
+        if (!hasData) {
+            setConsoleTextColor(12); // Red color for error message
+            cout << "No sales data found for the month " << month << ".\n";
+            setConsoleTextColor(7); // Reset to default color
+        }
+        else {
+            reportTableFormat(monthlyBookSalesTable);
+            cout << monthlyBookSalesTable << endl;
+        }
+
+        mysql_free_result(result);
+
+        // Provide an option to go back to the month input
+        setConsoleTextColor(14); // Yellow color for input prompt
+        cout << "\nPress 'B' to input another month or any other key to return to the report menu...";
+        setConsoleTextColor(7); // Reset to default color
+        char choice = _getch();
+        if (tolower(choice) == 'b') {
+            continue; // Restart the loop for a new month input
+        }
+        else {
+            break; // Exit the function to return to the report menu
+        }
     }
-
-    string query = "SELECT b.Title AS Book_Title, "
-        "SUM(bo.quantity) AS Total_Quantity_Sold, "
-        "SUM(bo.price) AS Total_Sales "
-        "FROM book_order bo "
-        "JOIN book b ON bo.BookID = b.BookID "
-        "JOIN `order` o ON bo.orderID = o.orderID "
-        "WHERE o.orderStatus = 'completed' "
-        "AND DATE_FORMAT(o.orderDate, '%Y-%m') = '" + month + "' "
-        "GROUP BY b.BookID "
-        "ORDER BY Total_Sales DESC;";
-
-    if (mysql_query(conn, query.c_str())) {
-        cerr << "Query execution failed: " << mysql_error(conn) << endl;
-        _getch();
-        return;
-    }
-
-    MYSQL_RES* result = mysql_store_result(conn);
-    if (!result) {
-        cerr << "Failed to store result: " << mysql_error(conn) << endl;
-        _getch();
-        return;
-    }
-
-    Table monthlyBookSalesTable;
-    monthlyBookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
-
-    MYSQL_ROW row;
-    while ((row = mysql_fetch_row(result))) {
-        monthlyBookSalesTable.add_row({ row[0], row[1], row[2] });
-    }
-
-    reportTableFormat(monthlyBookSalesTable);
-    cout << monthlyBookSalesTable << endl;
-
-    mysql_free_result(result);
-    cout << "\nPress any key to return to the menu...";
-    _getch();
 }
 
 void Admin::ViewCustomerInfo(MYSQL* conn) {
@@ -1356,8 +1504,9 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
 
     while (continueSearching) {
         system("cls");
-        // Query to fetch customer details and the number of orders they have made
-        string query = "SELECT u.UserID, u.Phone_no, u.Name, u.username, COUNT(o.orderID) AS total_orders "
+        // Query to fetch customer details and the number of completed orders they have made
+        string query = "SELECT u.UserID, u.Phone_no, u.Name, u.username, "
+            "COUNT(CASE WHEN o.orderStatus = 'completed' THEN o.orderID END) AS total_completed_orders "
             "FROM USER u "
             "LEFT JOIN `order` o ON u.UserID = o.UserID "
             "WHERE u.Role = 'customer' "
@@ -1372,7 +1521,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
 
             // Create a table to display the results
             Table customerOrdersTable;
-            customerOrdersTable.add_row({ "User ID", "Phone No", "Name", "Username", "Total Orders" });
+            customerOrdersTable.add_row({ "User ID", "Phone No", "Name", "Username", "Total Completed Orders" });
             customerOrdersTable[0]
                 .format()
                 .font_style({ FontStyle::bold })
@@ -1385,7 +1534,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
                     row[1],  // Phone No
                     row[2],  // Name
                     row[3],  // Username
-                    row[4]   // Total Orders
+                    row[4]   // Completed Orders
                     });
             }
 
@@ -1445,6 +1594,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
 
             int currentOrderID = -1;
             Table orderTable;
+            int totalCompletedOrders = 0; // Variable to store the total number of completed orders
 
             while ((row = mysql_fetch_row(res))) {
                 int orderID = stoi(row[0]);
@@ -1467,6 +1617,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
                         .font_color(Color::green);
 
                     currentOrderID = orderID;
+                    totalCompletedOrders++; // Increment the total completed orders count
 
                     // Print order-level information
                     cout << "Order ID: " << row[0]
@@ -1490,6 +1641,9 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
             else {
                 cout << "\nNo completed orders found for this customer.\n";
             }
+
+            // Display the total number of completed orders
+            cout << "\n\033[1;32mTotal Completed Orders: " << totalCompletedOrders << "\033[0m\n";
 
             mysql_free_result(res);
         }
@@ -1830,18 +1984,12 @@ void Admin::CustomerManagementMenu(MYSQL* conn) {
 }
 
 string getMonthName(const string& month) {
-    if (month == "01") return "January";
-    if (month == "02") return "February";
-    if (month == "03") return "March";
-    if (month == "04") return "April";
-    if (month == "05") return "May";
-    if (month == "06") return "June";
-    if (month == "07") return "July";
-    if (month == "08") return "August";
-    if (month == "09") return "September";
-    if (month == "10") return "October";
-    if (month == "11") return "November";
-    if (month == "12") return "December";
+    const string months[] = {"January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December" };
+
+    int monthIndex = stoi(month) - 1; // Convert string to int and adjust to 0-based index
+    if (monthIndex >= 0 && monthIndex < 12) {
+        return months[monthIndex];
+    }
     return "Invalid Month";
 }
 

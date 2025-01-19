@@ -1,6 +1,5 @@
 #include "Customer.h"
 
-
 void Customer::CustomerRegistration(MYSQL* conn) {
     system("cls");
     setConsoleTextColor(14); // Yellow color for the title
@@ -9,6 +8,40 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     cout << "=============================================" << endl;
     setConsoleTextColor(7); // Reset to default color
 
+    // Displaying the message in a box with attention-grabbing color
+    setConsoleTextColor(11); // Cyan color for emphasis
+    cout << "=========================================================" << endl;
+    cout << "| You can press 'B' at any time to return to the menu.  |" << endl;
+    cout << "=========================================================" << endl;
+    setConsoleTextColor(7); // Reset to default color
+
+    auto confirmReturn = []() -> bool {
+        while (true) {
+            cout << "\n=============================================================================\n";
+            cout << "Are you sure you want to return to the menu? (Y for yes / N for no): ";
+            string confirm;
+            getline(cin, confirm);
+            cout << "==============================================================================\n";
+
+            // Trim leading and trailing spaces
+            confirm.erase(0, confirm.find_first_not_of(' '));
+            confirm.erase(confirm.find_last_not_of(' ') + 1);
+
+            if (confirm == "Y" || confirm == "y") {
+                return true;  // User confirmed
+            }
+            else if (confirm == "N" || confirm == "n") {
+                return false; // User declined
+            }
+            else {
+                // Handle invalid input
+                cout << "Invalid input. Please enter 'Y' for yes or 'N' for no." << endl;
+                cout << "Press any key to try again...";
+                cin.get();
+            }
+        }
+        };
+
     while (true) {
         setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Name: ";
@@ -16,42 +49,66 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         cin.ignore();
         getline(cin, name);
 
+        if (name == "B" || name == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
+
         if (name.empty()) {
             setConsoleTextColor(12); // Red color for error message
             cout << "Name cannot be empty. Please enter a valid name." << endl;
             continue;
         }
 
-        // Check if name contains only valid characters (letters, spaces, and optionally '-' and "'")
         if (!regex_match(name, regex("^[A-Za-z\\s'-]+$"))) {
             setConsoleTextColor(12); // Red color for error message
             cout << "Invalid name. Name can only contain letters, spaces, dashes (-), and apostrophes ('). Please try again." << endl;
-            continue; // Ask for input again
+            continue;
         }
 
-        break; // Exit the loop if the name is valid
+        break;
     }
 
     while (true) {
         setConsoleTextColor(11); // Cyan color for input prompt
-        cout << "IC no (12 digits)[example:0102********]: ";
+        cout << "IC no(12 digits) [example:0102********]: ";
         setConsoleTextColor(7); // Reset to default color
         getline(cin, ic_no);
+
+        if (ic_no == "B" || ic_no == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
+
         if (ic_no.length() == 12 && isNumeric(ic_no)) {
             break;
         }
+
         setConsoleTextColor(12); // Red color for error message
         cout << "Invalid input. Please enter exactly 12 digits for IC no." << endl;
     }
 
     while (true) {
         setConsoleTextColor(11); // Cyan color for input prompt
-        cout << "Phone no(Ex.:0123456789): ";
+        cout << "Phone no (10 digits): ";
         setConsoleTextColor(7); // Reset to default color
         getline(cin, phone_no);
+
+        if (phone_no == "B" || phone_no == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
+
         if (phone_no.length() == 10 && isNumeric(phone_no)) {
             break;
         }
+
         setConsoleTextColor(12); // Red color for error message
         cout << "Invalid input. Please enter only 10 numbers for Phone no." << endl;
     }
@@ -61,11 +118,24 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     setConsoleTextColor(7); // Reset to default color
     getline(cin, address);
 
+    if (address == "B" || address == "b") {
+        if (confirmReturn()) {
+            return; // Exit the function and return to menu
+        }
+    }
+
     while (true) {
         setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Username: ";
         setConsoleTextColor(7); // Reset to default color
         getline(cin, cus_username);
+
+        if (cus_username == "B" || cus_username == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
 
         if (cus_username.length() < 5) {
             setConsoleTextColor(12); // Red color for error message
@@ -73,7 +143,6 @@ void Customer::CustomerRegistration(MYSQL* conn) {
             continue;
         }
 
-        // Use the usernameExists function to check if the username is already taken
         if (IsUsernameExists(cus_username)) {
             setConsoleTextColor(12); // Red color for error message
             cout << "This username is already taken. Please try a different one." << endl;
@@ -83,59 +152,74 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         }
     }
 
-    setConsoleTextColor(11); // Cyan color for input prompt
-    cout << "Enter password (at least 6 characters, combination of letters and numbers): ";
-    setConsoleTextColor(7); // Reset to default color
-    getline(cin, cus_password);
-
-    // Check if the password meets the minimum length and contains both letters and numbers
-    while (cus_password.length() < 6 || !regex_match(cus_password, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
-        setConsoleTextColor(12); // Red color for error message
-        cout << "Password must be at least 6 characters long and contain both letters and numbers. Please try again: ";
+    string cus_password, confirmPassword;
+    while (true) {
+        setConsoleTextColor(11); // Cyan color for input prompt
+        cout << "Enter password (at least 6 characters, combination of letters and numbers): ";
         setConsoleTextColor(7); // Reset to default color
-        getline(cin, cus_password);
+        cus_password = getHiddenInput(); // Use getHiddenInput() for password input
+
+        if (cus_password == "B" || cus_password == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
+
+        if (cus_password.length() < 6 || !regex_match(cus_password, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
+            setConsoleTextColor(12); // Red color for error message
+            cout << "Password must be at least 6 characters long and contain both letters and numbers. Please try again." << endl;
+        }
+        else {
+            break;
+        }
     }
 
-    // Ask the user to re-enter the password for confirmation
-    string confirmPassword;
-    setConsoleTextColor(11); // Cyan color for input prompt
-    cout << "Re-enter password to confirm: ";
-    setConsoleTextColor(7); // Reset to default color
-    getline(cin, confirmPassword);
-
-    // Check if both passwords match
-    while (cus_password != confirmPassword) {
-        setConsoleTextColor(12); // Red color for error message
-        cout << "Passwords do not match. Please re-enter the password: ";
-        setConsoleTextColor(7); // Reset to default color
-        getline(cin, cus_password);
+    // Ask the customer to confirm the password
+    while (true) {
         setConsoleTextColor(11); // Cyan color for input prompt
         cout << "Re-enter password to confirm: ";
         setConsoleTextColor(7); // Reset to default color
-        getline(cin, confirmPassword);
+        confirmPassword = getHiddenInput(); // Use getHiddenInput() for password confirmation
+
+        if (confirmPassword == "B" || confirmPassword == "b") {
+            if (confirmReturn()) {
+                return; // Exit the function and return to menu
+            }
+            continue; // Go back to the input prompt
+        }
+
+        if (confirmPassword != cus_password) {
+            setConsoleTextColor(12); // Red color for error message
+            cout << "Passwords do not match. Please try again." << endl;
+        }
+        else {
+            break; // Passwords match, proceed
+        }
     }
 
-    // Once passwords are confirmed, hash the password
-    string hash = BCrypt::generateHash(cus_password);
+    // Hash the password using BCrypt
+    string hashedPassword = BCrypt::generateHash(cus_password);
 
-    string insert_query = "INSERT INTO USER (Name, IC_no, Phone_no, Address, username, password, Role) "
-        "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address + "', '" + cus_username + "', '" + hash + "', 'customer')";
+    // Insert the customer into the database
+    string insertQuery = "INSERT INTO USER (Name, IC_no, Phone_no, Address, username, password, Role) "
+        "VALUES ('" + name + "', '" + ic_no + "', '" + phone_no + "', '" + address + "', '" + cus_username + "', '" + hashedPassword + "', 'customer')";
 
-    const char* q = insert_query.c_str();
-
+    const char* q = insertQuery.c_str();
     int qstate = mysql_query(conn, q);
 
     if (!qstate) {
         setConsoleTextColor(10); // Green color for success message
-        cout << endl << "Customer has been successfully added to the database." << endl;
+        cout << "\nCustomer registered successfully!\n";
+        setConsoleTextColor(7); // Reset to default color
     }
     else {
         setConsoleTextColor(12); // Red color for error message
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+        cout << "Failed to register customer. Error Code: " << mysql_errno(conn) << endl;
+        setConsoleTextColor(7); // Reset to default color
     }
 
-    setConsoleTextColor(7); // Reset to default color
-    _getch();
+    _getch(); // Wait for user input before returning
 }
 
 void Customer::SetDBConnection(MYSQL* conn) {
@@ -985,6 +1069,7 @@ void Customer::ConfirmOrder() {
     cout << "                              Confirm Order                                        \n";
     cout << "===================================================================================\n";
 
+    // Fetch the pending order ID for the current user
     string query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
     const char* q = query.c_str();
 
@@ -1007,6 +1092,68 @@ void Customer::ConfirmOrder() {
     int orderID = atoi(row[0]);
     mysql_free_result(res);
 
+    // Fetch and display the items in the order cart
+    string cartQuery = "SELECT b.Title, bo.quantity, b.Price, (bo.quantity * b.Price) AS Total "
+        "FROM book_order bo "
+        "JOIN book b ON bo.BookID = b.BookID "
+        "WHERE bo.orderID = " + to_string(orderID);
+    const char* cartQ = cartQuery.c_str();
+
+    if (mysql_query(conn, cartQ)) {
+        cout << "Failed to fetch order details. Error Code: " << mysql_errno(conn) << endl;
+        _getch();
+        return;
+    }
+
+    res = mysql_store_result(conn);
+    if (res == nullptr || mysql_num_rows(res) == 0) {
+        cout << "No items found in the order cart." << endl;
+        mysql_free_result(res);
+        _getch();
+        return;
+    }
+
+    // Display the order cart items in a table
+    Table orderCartTable;
+    orderCartTable.add_row({ "Title", "Quantity", "Unit Price (RM)", "Total (RM)" });
+
+    double totalPrice = 0.0;
+    while ((row = mysql_fetch_row(res))) {
+        string title = row[0];
+        int quantity = atoi(row[1]);
+        double unitPrice = atof(row[2]);
+        double total = atof(row[3]);
+
+        ostringstream unitPriceStream, totalStream;
+        unitPriceStream << fixed << setprecision(2) << unitPrice;
+        totalStream << fixed << setprecision(2) << total;
+
+        orderCartTable.add_row({
+            title,
+            to_string(quantity),
+            unitPriceStream.str(),
+            totalStream.str()
+            });
+
+        totalPrice += total;
+    }
+
+    mysql_free_result(res);
+
+    // Add total price row
+    ostringstream totalPriceStream;
+    totalPriceStream << fixed << setprecision(2) << totalPrice;
+    orderCartTable.add_row({
+        "", "", "Total Price:", totalPriceStream.str()
+        });
+
+    // Apply table formatting
+    cartTableFormat(orderCartTable);
+
+    // Display the table
+    cout << orderCartTable << endl;
+
+    // Ask for confirmation
     cout << "Are you sure you want to confirm your order? (1 for Yes, 0 for No): ";
     int choice;
     cin >> choice;
@@ -1361,9 +1508,6 @@ void Customer::MyProfile() {
     else {
         return;
     }
-
-    cout << "\n\033[1;36mPress any key to return to the main menu...\033[0m";
-    _getch();
 }
 
 void Customer::UpdateBookStock(int book_id, int quantity) {
@@ -1404,7 +1548,7 @@ void Customer::EditProfile() {
 
                 if (newName.empty()) {
                     newName = currentName; // Keep the current name if input is empty
-                    break; 
+                    break;
                 }
                 // Regular expression to allow letters, spaces, '-' and '@' and '''
                 regex namePattern("^[A-Za-z\\s']+$");
@@ -1454,7 +1598,7 @@ void Customer::EditProfile() {
                 // Check if the username is at least 5 characters long
                 if (newUsername.length() < 5) {
                     cout << "\033[1;31mUsername must be at least 5 characters long. Please try again.\033[0m" << endl;
-                    continue; 
+                    continue;
                 }
 
                 // Check if the new username exists in the database
@@ -1529,6 +1673,8 @@ void Customer::EditProfile() {
             qstate = mysql_query(conn, updateQuery.c_str());
             if (!qstate) {
                 cout << "\n\033[1;32mYour profile updated successfully!\033[0m" << endl;
+                // Call MyProfile to show the updated profile
+                MyProfile();
             }
             else {
                 cout << "\033[1;31mFailed to update profile! Error Code: \033[0m" << mysql_errno(conn) << endl;
@@ -1542,27 +1688,44 @@ void Customer::EditProfile() {
     else {
         cout << "\033[1;31mFailed to retrieve user data! Error Code: \033[0m" << mysql_errno(conn) << endl;
     }
-
 }
 
 bool Customer::IsUsernameExists(const string& username) {
+    // Ensure the connection is valid
+    if (conn == nullptr) {
+        cout << "Database connection is not established!" << endl;
+        return false;
+    }
+
+    // Ensure the username is safely escaped to avoid SQL injection
     string query = "SELECT COUNT(*) FROM USER WHERE username = '" + username + "'";
     int qstate = mysql_query(conn, query.c_str());
 
     if (qstate) {
-        cout << "\033[1;31mError checking username existence. Error Code: \033[0m" << mysql_errno(conn) << endl;
-        return false; // Assume false in case of error
+        cout << "MySQL query failed: " << mysql_error(conn) << endl;
+        return false;
     }
 
     MYSQL_RES* res = mysql_store_result(conn);
-    MYSQL_ROW row = mysql_fetch_row(res);
-    mysql_free_result(res);
-
-    if (row && atoi(row[0]) > 0) {
-        return true; // Username exists
+    if (res == nullptr) {
+        cout << "Error storing result: " << mysql_error(conn) << endl;
+        return false;
     }
-    return false; // Username does not exist
+
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row == nullptr) {
+        cout << "No rows returned in the query result." << endl;
+        mysql_free_result(res);
+        return false;
+    }
+
+    bool exists = atoi(row[0]) > 0;
+    mysql_free_result(res); // Free the result memory
+
+    return exists;
 }
+
+
 
 
 

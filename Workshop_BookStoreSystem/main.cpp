@@ -28,7 +28,7 @@ int main() {
         cout << "      WELCOME TO OUR BOOKSTORE\n";
         cout << "======================================\n\n";
         setConsoleTextColor(7);  // Default color
-        cout << "1. Registration\n2. Log in\n3. Exit" << endl<<endl;
+        cout << "1. Registration (Customer)\n2. Log in\n3. Exit" << endl<<endl;
         cout << "Enter your choice: ";
 
         while (true) {
@@ -46,6 +46,7 @@ int main() {
         }
 
         if (choice == 1) {
+            customer.SetDBConnection(dbConn.conn);
             customer.CustomerRegistration(dbConn.conn);
         }
 
