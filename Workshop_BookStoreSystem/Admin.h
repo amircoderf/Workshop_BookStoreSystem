@@ -24,7 +24,6 @@ public:
 	void AddBooks(MYSQL* conn);
 	void UpdateBooks(MYSQL* conn,const string& bookid);
 	void DeleteBooks(MYSQL* conn, const string& bookid);
-	void ViewCustomer(MYSQL* conn);
 	void SalesReport(MYSQL* conn);
 	bool DisplayBooks(MYSQL* conn);
 	void SearchBooks(MYSQL* conn);
@@ -34,7 +33,6 @@ public:
 	void CustomerManagementMenu(MYSQL* conn);
 	void ViewCustomerInfo(MYSQL* conn);
 	void ViewCustomerOrders(MYSQL* conn);
-	void viewReportGraph(MYSQL* conn);
 };
 
 

@@ -116,8 +116,8 @@ void LogIn(MYSQL* conn) {
                 admin.AdminInterface(conn);
             }
             else if (role == "customer") {
-                customer.setDBConnection(conn);
-                customer.setUserId(userId);
+                customer.SetDBConnection(conn);
+                customer.SetUserId(userId);
                 customer.CustomerInterface(); // Pass UserID for customer actions
             }
             else {

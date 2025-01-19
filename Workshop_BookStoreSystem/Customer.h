@@ -16,27 +16,27 @@ class Customer {
 private:
     MYSQL* conn;
     string ic_no, phone_no, name, address, cus_username, cus_password;
-    int userID;
+    int user_id;
 
 public:
-    void setUserId(int userID);
-    void setDBConnection(MYSQL* conn);
+    
+    void SetUserId(int user_id);
+    void SetDBConnection(MYSQL* conn);
     void CustomerRegistration(MYSQL* conn);
     void CustomerInterface();
     void ViewBooks();
     void OrderCart();
-    void chooseBooksToOrder();
-    void searchBooks();
-    void sortBooks();
-    void confirmOrder();
-    void adjustItemQuantity();
-    void addOrUpdateBookInOrder(int orderID, int bookID, int quantity, double price);
-    void updateBookStock(int bookID, int quantity);
-    void myProfile();
-    void viewPastOrder();
+    void ChooseBooksToOrder();
+    void SearchBooks();
+    void SortBooks();
+    void ConfirmOrder();
+    void AdjustItemQuantity();
+    void AddOrUpdateBookInOrder(int order_id, int book_id, int quantity, double price);
+    void UpdateBookStock(int book_id, int quantity);
+    void MyProfile();
+    void ViewPastOrder();
     void EditProfile();
-    bool usernameExists(const string& username);
-    //update book quantity soon tm
+    bool IsUsernameExists(const string& username);
 };
 
 #endif

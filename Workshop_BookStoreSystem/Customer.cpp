@@ -74,7 +74,7 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         }
 
         // Use the usernameExists function to check if the username is already taken
-        if (usernameExists(cus_username)) {
+        if (IsUsernameExists(cus_username)) {
             setConsoleTextColor(12); // Red color for error message
             cout << "This username is already taken. Please try a different one." << endl;
         }
@@ -138,12 +138,12 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     _getch();
 }
 
-void Customer::setDBConnection(MYSQL* conn) {
+void Customer::SetDBConnection(MYSQL* conn) {
     this->conn = conn;
 }
 
-void Customer::setUserId(int userID) {
-    this->userID = userID;  // Store userID in the class to avoid passing it around
+void Customer::SetUserId(int user_id) {
+    this->user_id = user_id;  // Store userID in the class to avoid passing it around
 }
 
 void Customer::CustomerInterface() {
@@ -151,7 +151,7 @@ void Customer::CustomerInterface() {
     char confirmLogout;
 
     string username;
-    string query = "SELECT Username FROM user WHERE UserID = " + to_string(userID);
+    string query = "SELECT Username FROM user WHERE UserID = " + to_string(user_id);
     if (mysql_query(conn, query.c_str())) {
         cerr << "Error fetching username: " << mysql_error(conn) << endl;
         username = "Customer"; // Default value if username cannot be fetched
@@ -237,7 +237,7 @@ void Customer::CustomerInterface() {
             }
             break;
         case 1:
-            myProfile();
+            MyProfile();
             break;
         case 2:
             ViewBooks();
@@ -246,7 +246,7 @@ void Customer::CustomerInterface() {
             OrderCart();
             break;
         case 4:
-            viewPastOrder();
+            ViewPastOrder();
             break;
         default:
             break;
@@ -320,13 +320,13 @@ void Customer::ViewBooks()
 
         switch (choice) {
         case 1:
-            chooseBooksToOrder();
+            ChooseBooksToOrder();
             break;
         case 2:
-            searchBooks();
+            SearchBooks();
             break;
         case 3:
-            sortBooks();
+            SortBooks();
             break;
         case 4:
             return; // Exit the loop
@@ -339,9 +339,9 @@ void Customer::ViewBooks()
 }
 
 // Function to add or update a book in the order
-void Customer::addOrUpdateBookInOrder(int orderID, int bookID, int quantity, double price) {
+void Customer::AddOrUpdateBookInOrder(int order_id, int book_id, int quantity, double price) {
     // Check if the book already exists in the order
-    string checkBookOrderQuery = "SELECT quantity FROM book_order WHERE orderID = " + to_string(orderID) + " AND BookID = " + to_string(bookID);
+    string checkBookOrderQuery = "SELECT quantity FROM book_order WHERE orderID = " + to_string(order_id) + " AND BookID = " + to_string(book_id);
     const char* checkBookOrderQ = checkBookOrderQuery.c_str();
 
     if (mysql_query(conn, checkBookOrderQ)) {
@@ -358,33 +358,33 @@ void Customer::addOrUpdateBookInOrder(int orderID, int bookID, int quantity, dou
 
         // Update the existing record in the `book_order` table
         string updateBookOrderQuery = "UPDATE book_order SET quantity = quantity + " + to_string(quantity) + ", price = price + " + to_string(price * quantity) +
-            " WHERE orderID = " + to_string(orderID) + " AND BookID = " + to_string(bookID);
+            " WHERE orderID = " + to_string(order_id) + " AND BookID = " + to_string(book_id);
         const char* updateBookOrderQ = updateBookOrderQuery.c_str();
 
         if (mysql_query(conn, updateBookOrderQ)) {
             cout << "Failed to update existing book in order. Error Code: " << mysql_errno(conn) << endl;
         }
         else {
-            cout << "Book with ID " << bookID << " quantity updated in your order." << endl;
+            cout << "Book with ID " << book_id << " quantity updated in your order." << endl;
         }
     }
     else {
         // Book does not exist in the order, insert a new record
-        string bookOrderQuery = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" + to_string(orderID) + ", " + to_string(bookID) + ", " + to_string(quantity) + ", " + to_string(price * quantity) + ")";
+        string bookOrderQuery = "INSERT INTO book_order (orderID, BookID, quantity, price) VALUES (" + to_string(order_id) + ", " + to_string(book_id) + ", " + to_string(quantity) + ", " + to_string(price * quantity) + ")";
         const char* bookOrderQ = bookOrderQuery.c_str();
 
         if (mysql_query(conn, bookOrderQ)) {
             cout << "Failed to add book to order. Error Code: " << mysql_errno(conn) << endl;
         }
         else {
-            cout << "Book with ID " << bookID << " has been added to your order." << endl;
+            cout << "Book with ID " << book_id << " has been added to your order." << endl;
         }
     }
 
     mysql_free_result(res);
 }
 
-void Customer::chooseBooksToOrder() {
+void Customer::ChooseBooksToOrder() {
     int bookID, quantity;
     double price;
     int stock;
@@ -393,7 +393,7 @@ void Customer::chooseBooksToOrder() {
     bool orderCreated = false;
 
     // Check for an existing pending order
-    string checkOrderQuery = "SELECT orderID, totalAmount FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+    string checkOrderQuery = "SELECT orderID, totalAmount FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
     const char* checkOrderQ = checkOrderQuery.c_str();
 
     if (mysql_query(conn, checkOrderQ)) {
@@ -469,7 +469,7 @@ void Customer::chooseBooksToOrder() {
 
         // Create a new order if no pending order exists
         if (!orderCreated) {
-            string orderQuery = "INSERT INTO `order` (orderDate, orderStatus, totalAmount, UserID) VALUES (CURDATE(), 'pending', 0, " + to_string(userID) + ")";
+            string orderQuery = "INSERT INTO `order` (orderDate, orderStatus, totalAmount, UserID) VALUES (CURDATE(), 'pending', 0, " + to_string(user_id) + ")";
             const char* orderQ = orderQuery.c_str();
 
             if (mysql_query(conn, orderQ)) {
@@ -483,10 +483,10 @@ void Customer::chooseBooksToOrder() {
         }
 
         // Call the function to add or update the book in the order
-        addOrUpdateBookInOrder(orderID, bookID, quantity, price);
+        AddOrUpdateBookInOrder(orderID, bookID, quantity, price);
 
         // Call the updateBookStock function to decrease the stock
-        updateBookStock(bookID, quantity);
+        UpdateBookStock(bookID, quantity);
 
         totalAmount += price * quantity;
     }
@@ -505,7 +505,7 @@ void Customer::chooseBooksToOrder() {
     }
 }
 
-void Customer::searchBooks() {
+void Customer::SearchBooks() {
     while (true) {
         system("cls");
         cout << "===================================================================================" << endl;
@@ -663,7 +663,7 @@ void Customer::searchBooks() {
 
             // Get or create order
             int orderID = 0;
-            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
             if (mysql_query(conn, query.c_str())) {
                 cout << "Error checking pending order! Error Code: " << mysql_errno(conn) << endl;
                 continue;
@@ -677,7 +677,7 @@ void Customer::searchBooks() {
             }
             else {
                 mysql_free_result(res);
-                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
+                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(user_id) + ", 'pending')";
                 if (mysql_query(conn, query.c_str())) {
                     cout << "Error creating new order! Error Code: " << mysql_errno(conn) << endl;
                     continue;
@@ -686,14 +686,14 @@ void Customer::searchBooks() {
             }
 
             // Add or update the book in the order
-            updateBookStock(bookID, quantity);
-            addOrUpdateBookInOrder(orderID, bookID, quantity, price);
+            UpdateBookStock(bookID, quantity);
+            AddOrUpdateBookInOrder(orderID, bookID, quantity, price);
             cout << "Book added to order successfully.\n";
         }
     }
 }
 
-void Customer::sortBooks() {
+void Customer::SortBooks() {
     while (true) {
         system("cls");
         cout << "===================================================================================" << endl;
@@ -840,7 +840,7 @@ void Customer::sortBooks() {
                 continue;
             }
 
-            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
             const char* checkOrderQuery = query.c_str();
             if (mysql_query(conn, checkOrderQuery)) {
                 cout << "Failed to check order. Error Code: " << mysql_errno(conn) << endl;
@@ -855,7 +855,7 @@ void Customer::sortBooks() {
             }
             else {
                 mysql_free_result(res);
-                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(userID) + ", 'pending')";
+                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(user_id) + ", 'pending')";
                 const char* createOrderQuery = query.c_str();
                 if (mysql_query(conn, createOrderQuery)) {
                     cout << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
@@ -865,9 +865,9 @@ void Customer::sortBooks() {
             }
             mysql_free_result(res);
 
-            updateBookStock(stoi(selectedBookID), quantity);
+            UpdateBookStock(stoi(selectedBookID), quantity);
             // Use addOrUpdateBookInOrder instead of direct insert
-            addOrUpdateBookInOrder(orderID, stoi(selectedBookID), quantity, price);
+            AddOrUpdateBookInOrder(orderID, stoi(selectedBookID), quantity, price);
 
             string newTotalAmount = "UPDATE `order` SET totalAmount = totalAmount + " + to_string(price * quantity) + " WHERE orderID = " + to_string(orderID);
             const char* totalAmount = newTotalAmount.c_str();
@@ -892,7 +892,7 @@ void Customer::OrderCart() {
         string query = "SELECT o.orderID, bo.BookID, b.Title, bo.quantity, bo.price, b.Price AS UnitPrice FROM `order` o "
             "JOIN book_order bo ON o.orderID = bo.orderID "
             "JOIN book b ON bo.BookID = b.BookID "
-            "WHERE o.UserID = " + to_string(userID) + " AND o.orderStatus = 'pending'";
+            "WHERE o.UserID = " + to_string(user_id) + " AND o.orderStatus = 'pending'";
         const char* q = query.c_str();
 
         if (mysql_query(conn, q)) {
@@ -965,10 +965,10 @@ void Customer::OrderCart() {
 
         switch (choice) {
         case 1:
-            confirmOrder();
+            ConfirmOrder();
             break;
         case 2:
-            adjustItemQuantity();
+            AdjustItemQuantity();
             break;
         case 3:
             return;
@@ -979,13 +979,13 @@ void Customer::OrderCart() {
     }
 }
 
-void Customer::confirmOrder() {
+void Customer::ConfirmOrder() {
     system("cls");
     cout << "===================================================================================\n";
     cout << "                              Confirm Order                                        \n";
     cout << "===================================================================================\n";
 
-    string query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus = 'pending'";
+    string query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
     const char* q = query.c_str();
 
     if (mysql_query(conn, q)) {
@@ -1029,7 +1029,7 @@ void Customer::confirmOrder() {
     _getch();
 }
 
-void Customer::adjustItemQuantity() {
+void Customer::AdjustItemQuantity() {
     while (true) {
         int bookID, newQuantity;
 
@@ -1083,7 +1083,7 @@ void Customer::adjustItemQuantity() {
         // Query to check if the BookID exists in the current order cart
         string checkQuery = "SELECT bo.quantity FROM book_order bo "
             "JOIN `order` o ON bo.orderID = o.orderID "
-            "WHERE o.UserID = " + to_string(userID) +
+            "WHERE o.UserID = " + to_string(user_id) +
             " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
         const char* checkQueryCStr = checkQuery.c_str();
 
@@ -1109,7 +1109,7 @@ void Customer::adjustItemQuantity() {
             // Remove the item from the cart
             string deleteQuery = "DELETE bo FROM book_order bo "
                 "JOIN `order` o ON bo.orderID = o.orderID "
-                "WHERE o.UserID = " + to_string(userID) +
+                "WHERE o.UserID = " + to_string(user_id) +
                 " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
             const char* deleteQueryCStr = deleteQuery.c_str();
 
@@ -1140,7 +1140,7 @@ void Customer::adjustItemQuantity() {
                 "JOIN book b ON bo.BookID = b.BookID "
                 "SET bo.quantity = " + to_string(newQuantity) +
                 ", bo.price = b.Price * " + to_string(newQuantity) +  // Update price based on quantity and book price
-                " WHERE o.UserID = " + to_string(userID) +
+                " WHERE o.UserID = " + to_string(user_id) +
                 " AND o.orderStatus = 'pending' AND bo.BookID = " + to_string(bookID);
             const char* updateQueryCStr = updateQuery.c_str();
 
@@ -1168,12 +1168,12 @@ void Customer::adjustItemQuantity() {
             "JOIN (SELECT bo.orderID, SUM(bo.price) AS newTotal "
             "      FROM book_order bo "
             "      JOIN `order` o ON bo.orderID = o.orderID "
-            "      WHERE o.UserID = " + to_string(userID) +
+            "      WHERE o.UserID = " + to_string(user_id) +
             "        AND o.orderStatus = 'pending' "
             "      GROUP BY bo.orderID) AS updatedTotal "
             "ON o.orderID = updatedTotal.orderID "
             "SET o.totalAmount = updatedTotal.newTotal "
-            "WHERE o.UserID = " + to_string(userID) +
+            "WHERE o.UserID = " + to_string(user_id) +
             " AND o.orderStatus = 'pending';";
         const char* updateTotalQueryCStr = updateTotalQuery.c_str();
 
@@ -1197,7 +1197,7 @@ void Customer::adjustItemQuantity() {
     }
 }
 
-void Customer::viewPastOrder() {
+void Customer::ViewPastOrder() {
     while (true) {
         system("cls"); // Clear the screen at the start of each loop
         cout << "===================================================================================" << endl;
@@ -1205,7 +1205,7 @@ void Customer::viewPastOrder() {
         cout << "===================================================================================" << endl;
 
         // Query to fetch past orders for the logged-in user
-        string query = "SELECT orderID, orderDate, totalAmount, orderStatus FROM `order` WHERE UserID = " + to_string(userID) + " AND orderStatus != 'pending'";
+        string query = "SELECT orderID, orderDate, totalAmount, orderStatus FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus != 'pending'";
         const char* pastOrdersQuery = query.c_str();
 
         if (mysql_query(conn, pastOrdersQuery)) {
@@ -1291,12 +1291,12 @@ void Customer::viewPastOrder() {
     }
 }
 
-void Customer::myProfile() {
+void Customer::MyProfile() {
     Table profileTable;
     system("cls");
     cout << "\n\033[1;35m\t\t\t\t=== View/Edit Profile ===\033[0m\n" << endl;
 
-    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(userID);
+    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(user_id);
     int qstate = mysql_query(conn, query.c_str());
 
     if (!qstate) {
@@ -1312,7 +1312,7 @@ void Customer::myProfile() {
             profileTable.add_row({ "USERNAME", row[4] });
         }
         else {
-            cout << "\033[1;31mNo customer found with UserID \033[0m" << userID << endl;
+            cout << "\033[1;31mNo customer found with UserID \033[0m" << user_id << endl;
             mysql_free_result(res);
             return;
         }
@@ -1366,21 +1366,18 @@ void Customer::myProfile() {
     _getch();
 }
 
-
-
-void Customer::updateBookStock(int bookID, int quantity) {
+void Customer::UpdateBookStock(int book_id, int quantity) {
     // Query to update the stock in the book table
-    string updateStockQuery = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + to_string(bookID);
+    string updateStockQuery = "UPDATE book SET Stock = Stock - " + to_string(quantity) + " WHERE BookID = " + to_string(book_id);
     const char* updateStockQueryCStr = updateStockQuery.c_str();
 
     if (mysql_query(conn, updateStockQueryCStr)) {
-        cout << "Failed to update stock for the book with BookID " << bookID << ". Error Code: " << mysql_errno(conn) << endl;
+        cout << "Failed to update stock for the book with BookID " << book_id << ". Error Code: " << mysql_errno(conn) << endl;
     }
 }
 
-
 void Customer::EditProfile() {
-    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(userID);
+    string query = "SELECT Name, IC_no, Phone_no, Address, username, password FROM USER WHERE UserID = " + to_string(user_id);
     int qstate = mysql_query(conn, query.c_str());
 
     if (!qstate) {
@@ -1461,7 +1458,7 @@ void Customer::EditProfile() {
                 }
 
                 // Check if the new username exists in the database
-                if (usernameExists(newUsername)) {
+                if (IsUsernameExists(newUsername)) {
                     cout << "\033[1;31mUsername already exists. Please enter a different username.\033[0m" << endl;
                 }
                 else {
@@ -1527,7 +1524,7 @@ void Customer::EditProfile() {
                 "', Address='" + newAddress +
                 "', username='" + newUsername +
                 "', password='" + newPasswordHash +
-                "' WHERE UserID=" + to_string(userID);
+                "' WHERE UserID=" + to_string(user_id);
 
             qstate = mysql_query(conn, updateQuery.c_str());
             if (!qstate) {
@@ -1548,7 +1545,7 @@ void Customer::EditProfile() {
 
 }
 
-bool Customer::usernameExists(const string& username) {
+bool Customer::IsUsernameExists(const string& username) {
     string query = "SELECT COUNT(*) FROM USER WHERE username = '" + username + "'";
     int qstate = mysql_query(conn, query.c_str());
 
