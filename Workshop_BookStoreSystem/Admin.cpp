@@ -90,6 +90,7 @@ void Admin::AdminInterface(MYSQL* conn) {
 void Admin::BookManagementMenu(MYSQL* conn) {
     string bookid;
     int choice;
+    char continueChoice;
 
     do {
         system("cls");
@@ -120,7 +121,7 @@ void Admin::BookManagementMenu(MYSQL* conn) {
 
         switch (choice) {
         case 0:
-            return;  // Return to the main menu
+            return;  
         case 1:
             // View all books
             if (!DisplayBooks(conn)) {
@@ -134,28 +135,28 @@ void Admin::BookManagementMenu(MYSQL* conn) {
             _getch();
             break;
         case 2:
-            AddBooks(conn);  // Call AddBooks function
+            AddBooks(conn);  
             break;
         case 3:
-            // Display all books
-            if (!DisplayBooks(conn)) {
-                setConsoleTextColor(12);
-                cout << "No books available to update." << endl;
-                setConsoleTextColor(7);
-                break;
-            }
-
             while (true) {
+                // Display all books
+                if (!DisplayBooks(conn)) {
+                    setConsoleTextColor(12);
+                    cout << "No books available to update." << endl;
+                    setConsoleTextColor(7);
+                    break;
+                }
+
                 setConsoleTextColor(11);
-                cout << "\n\nEnter the BookID of the book you want to update (or type '0' to cancel): ";
+                cout << "\n\nEnter the BookID of the book you want to update (or type '0' to return to Book Management Menu): ";
                 setConsoleTextColor(7);
                 cin >> bookid;
 
                 if (bookid == "0") {
                     setConsoleTextColor(12);
-                    cout << "Update operation canceled." << endl;
+                    cout << "Returning to Book Management Menu..." << endl;
                     setConsoleTextColor(7);
-                    break;
+                    break; 
                 }
 
                 // Check if the BookID exists
@@ -164,7 +165,8 @@ void Admin::BookManagementMenu(MYSQL* conn) {
                     setConsoleTextColor(12);
                     cerr << "Error checking BookID: " << mysql_error(conn) << endl;
                     setConsoleTextColor(7);
-                    break;
+                    this_thread::sleep_for(seconds(1));
+                    continue; 
                 }
 
                 MYSQL_RES* res = mysql_store_result(conn);
@@ -172,7 +174,8 @@ void Admin::BookManagementMenu(MYSQL* conn) {
                     setConsoleTextColor(12);
                     cerr << "Error fetching result: " << mysql_error(conn) << endl;
                     setConsoleTextColor(7);
-                    break;
+                    this_thread::sleep_for(seconds(1));
+                    continue; 
                 }
 
                 MYSQL_ROW row = mysql_fetch_row(res);
@@ -181,27 +184,56 @@ void Admin::BookManagementMenu(MYSQL* conn) {
 
                 if (bookCount > 0) {
                     system("cls");
-                    UpdateBooks(conn, bookid);
-                    break;
+                    UpdateBooks(conn, bookid); 
+
+                    // Ask if the user wants to update another book
+                    while (true) {
+                        setConsoleTextColor(11);
+                        cout << "\nDo you want to update another book? (y/n): ";
+                        setConsoleTextColor(7);
+                        cin >> continueChoice;
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+
+                        if (continueChoice == 'y' || continueChoice == 'Y') {
+                            break; 
+                        }
+                        else if (continueChoice == 'n' || continueChoice == 'N') {
+                            setConsoleTextColor(12);
+                            cout << "Returning to Book Management Menu..." << endl;
+                            setConsoleTextColor(7);
+                            break;
+                        }
+                        else {
+                            setConsoleTextColor(12);
+                            cout << "Invalid input. Please enter 'y' or 'n'." << endl;
+                            setConsoleTextColor(7);
+                        }
+                    }
+
+                    if (continueChoice == 'n' || continueChoice == 'N') {
+                        break;
+                    }
                 }
                 else {
                     setConsoleTextColor(12);
                     cout << "Error: No book found with the BookID '" << bookid << "'. Please try again." << endl;
                     setConsoleTextColor(7);
                     cout << "------------------------------------------------------------------------------------" << endl;
+                    this_thread::sleep_for(seconds(1));
                 }
             }
             break;
         case 4:
-            // Display all books
-            if (!DisplayBooks(conn)) {
-                setConsoleTextColor(12);
-                cout << "No books available to delete." << endl;
-                setConsoleTextColor(7);
-                break;
-            }
+            char deleteAnother;
+            do {
+                // Display all books
+                if (!DisplayBooks(conn)) {
+                    setConsoleTextColor(12);
+                    cout << "No books available to delete." << endl;
+                    setConsoleTextColor(7);
+                    break;
+                }
 
-            while (true) {
                 setConsoleTextColor(11);
                 cout << "\n\nEnter the BookID of the book you want to delete (or type '0' to cancel): ";
                 setConsoleTextColor(7);
@@ -220,7 +252,7 @@ void Admin::BookManagementMenu(MYSQL* conn) {
                     setConsoleTextColor(12);
                     cerr << "Error checking BookID: " << mysql_error(conn) << endl;
                     setConsoleTextColor(7);
-                    break;
+                    continue; 
                 }
 
                 MYSQL_RES* res = mysql_store_result(conn);
@@ -228,7 +260,7 @@ void Admin::BookManagementMenu(MYSQL* conn) {
                     setConsoleTextColor(12);
                     cerr << "Error fetching result: " << mysql_error(conn) << endl;
                     setConsoleTextColor(7);
-                    break;
+                    continue; 
                 }
 
                 MYSQL_ROW row = mysql_fetch_row(res);
@@ -237,8 +269,7 @@ void Admin::BookManagementMenu(MYSQL* conn) {
 
                 if (bookCount > 0) {
                     system("cls");
-                    DeleteBooks(conn, bookid);
-                    break;
+                    DeleteBooks(conn, bookid); 
                 }
                 else {
                     setConsoleTextColor(12);
@@ -246,10 +277,20 @@ void Admin::BookManagementMenu(MYSQL* conn) {
                     setConsoleTextColor(7);
                     cout << "------------------------------------------------------------------------------------" << endl;
                 }
-            }
+
+                // Ask if the user wants to delete another book
+                setConsoleTextColor(11);
+                cout << "\nDo you want to delete another book? (y/n): ";
+                setConsoleTextColor(7);
+                cin >> deleteAnother;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+
+            } while (deleteAnother == 'y' || deleteAnother == 'Y');
+
             break;
         case 5:
-            SearchBooks(conn);  // Call SearchBooks function
+            cin.ignore();
+            SearchBooks(conn); 
             break;
         default:
             break;
@@ -270,18 +311,16 @@ void Admin::AddBooks(MYSQL* conn) {
             getline(cin, confirm);
             cout << "==============================================================================\n";
 
-            // Trim leading and trailing spaces
             confirm.erase(0, confirm.find_first_not_of(' '));
             confirm.erase(confirm.find_last_not_of(' ') + 1);
 
             if (confirm == "Y" || confirm == "y") {
-                return true;  // User confirmed
+                return true;  
             }
             else if (confirm == "N" || confirm == "n") {
-                return false; // User declined
+                return false; 
             }
             else {
-                // Handle invalid input
                 cout << "Invalid input. Please enter 'Y' for yes or 'N' for no." << endl;
                 cout << "Press any key to try again...";
                 cin.get();
@@ -291,27 +330,28 @@ void Admin::AddBooks(MYSQL* conn) {
 
     do {
         system("cls");
-        setConsoleTextColor(11); // Light cyan color
+        setConsoleTextColor(11); 
         cout << "=============================================\n";
         cout << "|          BOOK MANAGEMENT SYSTEM           |\n";
         cout << "=============================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7);
 
-        // Display /cancel option in a visually appealing box
-        setConsoleTextColor(12); // Red color for emphasis
+
+        setConsoleTextColor(12);
         cout << "+--------------------------------------------+\n";
         cout << "| You can type '/cancel' at any time to exit.|\n";
         cout << "+--------------------------------------------+\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7);
 
         // ISBN Input
         while (true) {
-            setConsoleTextColor(14); // Yellow color for input prompts
+            setConsoleTextColor(14); 
             cout << "Enter ISBN (13 digits) : ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             cin >> isbn;
 
             if (isbn == "/cancel") {
+                cin.ignore();
                 if (confirmCancel()) {
                     return;
                 }
@@ -329,7 +369,7 @@ void Admin::AddBooks(MYSQL* conn) {
                     if (res != nullptr) {
                         if (mysql_num_rows(res) > 0) {
                             mysql_free_result(res);
-                            setConsoleTextColor(12); // Red color for error message
+                            setConsoleTextColor(12); 
                             cout << "ISBN already exists in the database. Please enter a different ISBN.\n";
                             setConsoleTextColor(7); 
                             continue; 
@@ -341,27 +381,28 @@ void Admin::AddBooks(MYSQL* conn) {
                     }
                 }
                 else {
-                    setConsoleTextColor(12); // Red color for error message
+                    setConsoleTextColor(12); 
                     cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
                     setConsoleTextColor(7); 
                     return;
                 }
             }
             else {
-                setConsoleTextColor(12); // Red color for error message
+                setConsoleTextColor(12); 
                 cout << "Invalid input. ISBN must be exactly 13 digits long.\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
             }
         }
 
         // Title Input
-        setConsoleTextColor(14); // Yellow color for input prompts
+        setConsoleTextColor(14); 
         cout << "Title of the book : ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         cin.ignore();
         getline(cin, title);
 
         if (title == "/cancel") {
+            cin.ignore();
             if (confirmCancel()) {
                 return;
             }
@@ -372,22 +413,32 @@ void Admin::AddBooks(MYSQL* conn) {
 
         // Price Input
         while (true) {
-            setConsoleTextColor(14); // Yellow color for input prompts
+            setConsoleTextColor(14); 
             cout << "Price of the book (RM) : ";
-            setConsoleTextColor(7); 
+            setConsoleTextColor(7);
             string priceInput;
             cin >> priceInput;
 
             if (priceInput == "/cancel") {
+                cin.ignore();
                 if (confirmCancel()) {
-                    setConsoleTextColor(12); // Red color for cancellation message
+                    setConsoleTextColor(12); 
                     cout << "Operation cancelled by user.\n";
                     setConsoleTextColor(7); 
                     return;
                 }
                 else {
-                    continue; 
+                    continue;
                 }
+            }
+
+            // Check if the input has more than two decimal places
+            size_t decimalPos = priceInput.find('.');
+            if (decimalPos != string::npos && priceInput.length() - decimalPos - 1 > 2) {
+                setConsoleTextColor(12); 
+                cout << "Invalid input. Price can have at most two decimal places.\n";
+                setConsoleTextColor(7);
+                continue;
             }
 
             try {
@@ -396,7 +447,7 @@ void Admin::AddBooks(MYSQL* conn) {
                     break;
                 }
                 else {
-                    setConsoleTextColor(12); 
+                    setConsoleTextColor(12);
                     cout << "Invalid input. Price cannot be negative.\n";
                     setConsoleTextColor(7); 
                 }
@@ -417,6 +468,7 @@ void Admin::AddBooks(MYSQL* conn) {
             cin >> stockInput;
 
             if (stockInput == "/cancel") {
+                cin.ignore();
                 if (confirmCancel()) {
                     return;
                 }
@@ -451,6 +503,7 @@ void Admin::AddBooks(MYSQL* conn) {
         getline(cin, author);
 
         if (author == "/cancel") {
+            cin.ignore();
             if (confirmCancel()) {
                 setConsoleTextColor(12); 
                 cout << "Operation cancelled by user.\n";
@@ -469,6 +522,7 @@ void Admin::AddBooks(MYSQL* conn) {
         getline(cin, publisher);
 
         if (publisher == "/cancel") {
+            cin.ignore();
             if (confirmCancel()) {
                 setConsoleTextColor(12);
                 cout << "Operation cancelled by user.\n";
@@ -552,65 +606,93 @@ void Admin::AddBooks(MYSQL* conn) {
 void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
     string newValue;
     int fieldChoice;
-    string choice;
-
-    // Display the book details
-    string query = "SELECT * FROM book WHERE BookID = '" + bookid + "'";
-    if (mysql_query(conn, query.c_str())) {
-        cerr << "Error executing query: " << mysql_error(conn) << endl;
-        return;
-    }
-
-    MYSQL_RES* res = mysql_store_result(conn);
-    if (res == nullptr) {
-        cerr << "Error storing result: " << mysql_error(conn) << endl;
-        return;
-    }
-
-    if (mysql_num_rows(res) == 0) {
-        cout << "No book found with BookID: " << bookid << endl;
-        mysql_free_result(res);
-        return;
-    }
-
-    MYSQL_ROW row = mysql_fetch_row(res);
-    cout << "+---------------------------------------------------------------------------------+" << endl;
-    cout << "|                                                                                 |" << endl;
-    cout << "| BookID        : " << row[0] << setw(65 - strlen(row[0])) << "   |" << endl;
-    cout << "| ISBN          : " << row[1] << setw(65 - strlen(row[1])) << "   |" << endl;
-    cout << "| Title         : " << row[2] << setw(65 - strlen(row[2])) << "   |" << endl;
-    cout << "| Price         : RM" << row[3] << setw(65 - strlen(row[3]) - 2) << "   |" << endl;
-    cout << "| Author        : " << row[4] << setw(65 - strlen(row[4])) << "   |" << endl;
-    cout << "| Publisher     : " << row[5] << setw(65 - strlen(row[5])) << "   |" << endl;
-    cout << "| Published Year: " << row[6] << setw(65 - strlen(row[6])) << "   |" << endl;
-    cout << "|                                                                                 |" << endl;
-    cout << "+---------------------------------------------------------------------------------+" << endl;
-    mysql_free_result(res);
+    char updateAnother;
 
     do {
+        system("cls");
+        setConsoleTextColor(14);
+        cout << "=============================================" << endl;
+        cout << "           UPDATE BOOK DETAILS               " << endl;
+        cout << "=============================================" << endl;
+        setConsoleTextColor(7);
+
+        // Fetch and display book details
+        string query = "SELECT * FROM book WHERE BookID = '" + bookid + "'";
+        if (mysql_query(conn, query.c_str())) {
+            setConsoleTextColor(12);
+            cerr << "Error executing query: " << mysql_error(conn) << endl;
+            setConsoleTextColor(7);
+            _getch();
+            return;
+        }
+
+        MYSQL_RES* res = mysql_store_result(conn);
+        if (res == nullptr) {
+            setConsoleTextColor(12);
+            cerr << "Error storing result: " << mysql_error(conn) << endl;
+            setConsoleTextColor(7);
+            _getch();
+            return;
+        }
+
+        if (mysql_num_rows(res) == 0) {
+            setConsoleTextColor(12);
+            cout << "No book found with BookID: " << bookid << endl;
+            setConsoleTextColor(7);
+            mysql_free_result(res);
+            _getch();
+            return;
+        }
+
+        MYSQL_ROW row = mysql_fetch_row(res);
+        setConsoleTextColor(11);
+        cout << "+---------------------------------------------------------------------------------+" << endl;
+        cout << "|                                                                                 |" << endl;
+        cout << "| BookID        : " << row[0] << setw(65 - strlen(row[0])) << "   |" << endl;
+        cout << "| ISBN          : " << row[1] << setw(65 - strlen(row[1])) << "   |" << endl;
+        cout << "| Title         : " << row[2] << setw(65 - strlen(row[2])) << "   |" << endl;
+        cout << "| Price         : RM" << row[3] << setw(65 - strlen(row[3]) - 2) << "   |" << endl;
+        cout << "| Stock         : " << row[4] << setw(65 - strlen(row[4])) << "   |" << endl;
+        cout << "| Author        : " << row[5] << setw(65 - strlen(row[5])) << "   |" << endl;
+        cout << "| Publisher     : " << row[6] << setw(65 - strlen(row[6])) << "   |" << endl;
+        cout << "| Published Year: " << row[7] << setw(65 - strlen(row[7])) << "   |" << endl;
+        cout << "|                                                                                 |" << endl;
+        cout << "+---------------------------------------------------------------------------------+" << endl;
+        setConsoleTextColor(7);
+        mysql_free_result(res);
+
+        // Select the field to update
         while (true) {
+            setConsoleTextColor(14);
             cout << "\nSelect the field you want to update or enter 0 to quit:" << endl;
+            setConsoleTextColor(11);
             cout << "1. Title" << endl;
             cout << "2. Price" << endl;
             cout << "3. Stock" << endl;
             cout << "4. Author" << endl;
             cout << "5. Publisher" << endl;
             cout << "6. Published Year" << endl;
+            setConsoleTextColor(7);
             cout << "Enter your choice (1-6, or 0 to quit): ";
             cin >> fieldChoice;
 
             if (cin.fail() || fieldChoice < 0 || fieldChoice > 6) {
-                cin.clear();  // Clear input error flags
-                cin.ignore(1000, '\n');  // Discard invalid input
+                cin.clear();
+                cin.ignore(1000, '\n');
+                setConsoleTextColor(12);
                 cerr << "Invalid input. Please enter a number between 0 and 6." << endl << endl;
+                setConsoleTextColor(7);
             }
             else {
-                break;  // Valid input
+                break;
             }
         }
 
         if (fieldChoice == 0) {
-            cout << "Exiting update process." << endl;
+            setConsoleTextColor(12);
+            cout << "Exiting update process. Returning to the Book Management Menu..." << endl;
+            setConsoleTextColor(7);
+            this_thread::sleep_for(chrono::seconds(1)); 
             return;
         }
 
@@ -626,148 +708,207 @@ void Admin::UpdateBooks(MYSQL* conn, const string& bookid) {
 
         // Handle input for the selected field
         while (true) {
-            cout << "Enter the new value for " << field << " (or press Enter to cancel): ";
             cin.ignore();
+            setConsoleTextColor(11);
+            cout << "Enter the new value for " << field << " (or press Enter to cancel): ";
+            setConsoleTextColor(7);
             getline(cin, newValue);
 
             if (newValue.empty()) {
+                setConsoleTextColor(12);
                 cout << "Cancelled update for this field." << endl;
+                setConsoleTextColor(7);
                 break;
             }
 
             // Validate Price
             if (field == "Price") {
                 try {
-                    double price = stod(newValue); // Convert string into double
+                    double price = stod(newValue);
+                    if (price < 0) {
+                        setConsoleTextColor(12);
+                        cerr << "Error: Price must be a non-negative numeric value with up to 2 decimal places. Please enter again." << endl;
+                        setConsoleTextColor(7);
+                        newValue.clear();
+                        continue;
+                    }
                     stringstream stream;
                     stream << fixed << setprecision(2) << price;
                     if (stream.str() != newValue) {
+                        setConsoleTextColor(12);
                         cerr << "Error: Price must be a numeric value with up to 2 decimal places. Please enter again." << endl;
-                        continue; // Ask for price again
+                        setConsoleTextColor(7);
+                        newValue.clear();
+                        continue;
                     }
                 }
                 catch (const exception&) {
+                    setConsoleTextColor(12);
                     cerr << "Error: Price must be a numeric value with up to 2 decimal places. Please enter again." << endl;
-                    continue; // Ask for price again
+                    setConsoleTextColor(7);
+                    newValue.clear(); 
+                    continue;
                 }
             }
             // Validate Stock and Published Year
             else if (field == "Stock" || field == "PublishedYear") {
                 try {
-                    int number = stoi(newValue); // Convert to int
+                    int number = stoi(newValue);
+                    if (number < 0) {
+                        setConsoleTextColor(12);
+                        cerr << "Error: " << field << " must be a non-negative whole number. Please enter again." << endl;
+                        setConsoleTextColor(7);
+                        newValue.clear(); // Clear newValue for re-prompt
+                        continue;
+                    }
                     if (to_string(number) != newValue) {
-                        cerr << "Error: This field must be a whole number. Please enter again." << endl;
-                        continue; // Ask for stock again
+                        setConsoleTextColor(12);
+                        cerr << "Error: " << field << " must be a whole number. Please enter again." << endl;
+                        setConsoleTextColor(7);
+                        newValue.clear(); // Clear newValue for re-prompt
+                        continue;
                     }
                 }
                 catch (const std::exception&) {
-                    cerr << "Error: This field must be a whole number. Please enter again." << endl;
-                    continue; // Ask for stock again
+                    setConsoleTextColor(12);
+                    cerr << "Error: " << field << " must be a whole number. Please enter again." << endl;
+                    setConsoleTextColor(7);
+                    newValue.clear(); // Clear newValue for re-prompt
+                    continue;
                 }
             }
 
             // Confirmation step
+            setConsoleTextColor(11);
             cout << "You entered: " << field << " = " << newValue << ". Do you want to confirm this update? (y/n): ";
+            setConsoleTextColor(7);
             char confirm;
             cin >> confirm;
+
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
             if (confirm == 'y' || confirm == 'Y') {
                 string updateQuery = "UPDATE book SET " + field + " = '" + newValue + "' WHERE BookID = '" + bookid + "'";
 
                 if (mysql_query(conn, updateQuery.c_str()) == 0) {
-                    cout << field << " updated successfully!" << endl;
+                    // Check if any rows were affected
+                    if (mysql_affected_rows(conn) > 0) {
+                        setConsoleTextColor(10); 
+                        cout << field << " updated successfully!" << endl;
+                        setConsoleTextColor(7);
+                    }
+                    else {
+                        setConsoleTextColor(12); 
+                        cout << "Warning: No rows were updated. The book with BookID " << bookid << " may not exist or the data is unchanged." << endl;
+                        setConsoleTextColor(7);
+                    }
                 }
                 else {
+                    setConsoleTextColor(12);
                     cerr << "Error updating book: " << mysql_error(conn) << endl;
+                    setConsoleTextColor(7);
+                    cerr << "Failed query: " << updateQuery << endl;
+                    (void)_getch();
                 }
-                break; // Exit the input loop after successful update
-            }
-            else {
-                cout << "Update for " << field << " has been cancelled." << endl;
-                continue; // Ask for the field again
-            }
-        }
-
-        // Ask to update another field
-        while (true) {
-            cout << "Do you want to update another attribute in the SAME book? (y/n): ";
-            cin >> choice;
-
-            if (choice == "y" || choice == "n") {
                 break;
             }
-
-            cerr << "Invalid input. Please enter 'y' for yes or 'n' for no." << endl;
+            else if (confirm == 'n' || confirm == 'N') {
+                setConsoleTextColor(12); 
+                cout << "Update for " << field << " has been cancelled." << endl;
+                setConsoleTextColor(7);
+                continue;
+            }
+            else {
+                setConsoleTextColor(12); 
+                cerr << "Invalid input. Please enter 'y' to confirm or 'n' to cancel." << endl;
+                setConsoleTextColor(7);
+                continue;
+            }
         }
+        // Ask to update another attribute
+        while (true) {
+            setConsoleTextColor(11);
+            cout << "Do you want to update another attribute in the SAME book? (y/n): ";
+            setConsoleTextColor(7);
+            cin >> updateAnother;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
-        if (choice == "n") {
-            cout << "Exiting update process." << endl;
-            return;
+            if (updateAnother == 'y' || updateAnother == 'Y') {
+                break; 
+            }
+            else if (updateAnother == 'n' || updateAnother == 'N') {
+                return; 
+            }
+            else {
+                setConsoleTextColor(12);
+                cerr << "Invalid input. Please enter 'y' or 'n'." << endl;
+                setConsoleTextColor(7);
+            }
         }
-        cout << "---------------------------------------------------------------------------";
-
     } while (true);
 }
 
 void Admin::DeleteBooks(MYSQL* conn, const string& bookid) {
     // Check if the book exists and fetch its details
-    string checkQuery = "SELECT BookID, ISBN, Title, Price, Author, Publisher, PublishedYear FROM book WHERE BookID = '" + bookid + "'";
+    string checkQuery = "SELECT * FROM book WHERE BookID = '" + bookid + "'";
     const char* checkQ = checkQuery.c_str();
 
     if (mysql_query(conn, checkQ)) {
-        setConsoleTextColor(12); // Red for error message
+        setConsoleTextColor(12); 
         cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         _getch();
         return;
     }
 
     MYSQL_RES* res = mysql_store_result(conn);
     if (res == nullptr) {
-        setConsoleTextColor(12); // Red for error message
+        setConsoleTextColor(12);
         cout << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         _getch();
         return;
     }
 
     if (mysql_num_rows(res) == 0) {
-        setConsoleTextColor(12); // Red for error message
+        setConsoleTextColor(12);
         cout << "No book found with the given ID: " << bookid << endl;
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         mysql_free_result(res);
         _getch();
         return;
     }
 
-    // Fetch and display book details in a formatted table
+    // Fetch and display book details
     MYSQL_ROW row = mysql_fetch_row(res);
-    cout << "+---------------------------------------------------------------------------------+" << endl;
-    cout << "|                                                                                 |" << endl;
-    cout << "| BookID        : " << row[0] << setw(65 - strlen(row[0])) << "   |" << endl;
-    cout << "| ISBN          : " << row[1] << setw(65 - strlen(row[1])) << "   |" << endl;
-    cout << "| Title         : " << row[2] << setw(65 - strlen(row[2])) << "   |" << endl;
-    cout << "| Price         : RM" << row[3] << setw(65 - strlen(row[3]) - 2) << "   |" << endl;
-    cout << "| Author        : " << row[4] << setw(65 - strlen(row[4])) << "   |" << endl;
-    cout << "| Publisher     : " << row[5] << setw(65 - strlen(row[5])) << "   |" << endl;
-    cout << "| Published Year: " << row[6] << setw(65 - strlen(row[6])) << "   |" << endl;
-    cout << "|                                                                                 |" << endl;
-    cout << "+---------------------------------------------------------------------------------+" << endl;
+    setConsoleTextColor(11); 
+    cout << "\n==============================================================" << endl;
+    cout << "                      BOOK DETAILS                           " << endl;
+    cout << "==============================================================" << endl;
+    cout << " BookID        : " << row[0] << endl;
+    cout << " ISBN          : " << row[1] << endl;
+    cout << " Title         : " << row[2] << endl;
+    cout << " Price         : RM" << row[3] << endl;
+    cout << " Stock         : " << row[4] << endl;
+    cout << " Author        : " << row[5] << endl;
+    cout << " Publisher     : " << row[6] << endl;
+    cout << " Published Year: " << row[7] << endl;
+    cout << "==============================================================\n" << endl;
 
     // Free the result set
     mysql_free_result(res);
 
-    // Ask for confirmation before deletion
-    setConsoleTextColor(11); // Cyan for input prompt
-    cout << "\nAre you sure you want to delete this book? (y/n): ";
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(11); 
+    cout << "Are you sure you want to delete this book? (y/n): ";
+    setConsoleTextColor(7); 
     char confirmation;
     cin >> confirmation;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
     if (tolower(confirmation) != 'y') {
-        setConsoleTextColor(12); // Red for error message
+        setConsoleTextColor(12); 
         cout << "Deletion canceled. Press any key to continue...\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         _getch();
         return;
     }
@@ -778,69 +919,69 @@ void Admin::DeleteBooks(MYSQL* conn, const string& bookid) {
 
     if (!mysql_query(conn, deleteQ)) {
         if (mysql_affected_rows(conn) > 0) {
-            setConsoleTextColor(10); // Green for success message
-            cout << "Book with BookID " << bookid << " has been successfully deleted from the database." << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(10); 
+            cout << "\n==============================================================" << endl;
+            cout << "  Book with BookID " << bookid << " has been successfully deleted.  " << endl;
+            cout << "==============================================================\n" << endl;
+            setConsoleTextColor(7); 
         }
         else {
-            setConsoleTextColor(12); // Red for error message
-            cout << "No changes made. Book might have already been deleted." << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(12); 
+            cout << "\n==============================================================" << endl;
+            cout << "  No changes made. Book might have already been deleted.        " << endl;
+            cout << "==============================================================\n" << endl;
+            setConsoleTextColor(7);
         }
     }
     else {
-        setConsoleTextColor(12); // Red for error message
-        cout << "Error deleting book. Error Code: " << mysql_errno(conn) << endl;
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(12); 
+        cout << "\n==============================================================" << endl;
+        cout << "  Error deleting book. Error Code: " << mysql_errno(conn) << "         " << endl;
+        cout << "==============================================================\n" << endl;
+        setConsoleTextColor(7); 
     }
-
-    _getch(); // Wait for user input before returning
 }
 
 void Admin::SalesReport(MYSQL* conn) {
     int choice;
 
-    // Check if the database connection is valid
     if (conn == nullptr) {
-        setConsoleTextColor(12); // Red for error message
+        setConsoleTextColor(12); 
         cout << "Error: Database connection is invalid.\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         _getch();
         return;
     }
 
     do {
         system("cls");
-        // Set console text color for the title
-        setConsoleTextColor(14); // Yellow for the title
+        setConsoleTextColor(14); 
         cout << "========================================\n";
         cout << "          SALES REPORT MENU\n";
         cout << "========================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7);
 
-        // Display menu options with colors
-        setConsoleTextColor(11); // Cyan for menu options
+        setConsoleTextColor(11); 
         cout << "\nChoose Report Type:\n";
         cout << "1. Monthly Sales Report\n";
         cout << "2. Total Book Sales Report\n";
         cout << "3. Book Sales in a Month\n";
         cout << "0. Exit\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7);
 
-        // Prompt for user input
-        setConsoleTextColor(10); // Green for input prompt
+        setConsoleTextColor(10); 
         cout << "\nEnter your choice: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7);
 
         // Input validation
         if (!(cin >> choice)) {
-            cin.clear(); // Clear the error flag
-            cin.ignore(1000, '\n'); // Discard invalid input
-            setConsoleTextColor(12); // Red for error message
+            cin.clear(); 
+            cin.ignore(1000, '\n'); 
+            setConsoleTextColor(12); 
             cout << "Invalid input. Please enter a valid number.\n";
-            setConsoleTextColor(7); // Reset to default color
-            _getch(); // Wait for user to press a key
-            continue; // Restart the loop
+            setConsoleTextColor(7); 
+            _getch(); 
+            continue; 
         }
 
         // Handle user choice
@@ -858,21 +999,20 @@ void Admin::SalesReport(MYSQL* conn) {
             case 0:
                 return;
             default:
-                setConsoleTextColor(12); // Red for invalid choice
+                setConsoleTextColor(12); 
                 cout << "\nInvalid choice. Please select a valid option.\n";
-                setConsoleTextColor(7); // Reset to default color
-                _getch(); // Wait for user to press a key
+                setConsoleTextColor(7); 
+                _getch(); 
                 break;
             }
         }
         catch (const exception& e) {
-            // Handle unexpected exceptions
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nAn error occurred: " << e.what() << "\n";
-            setConsoleTextColor(7); // Reset to default color
-            _getch(); // Wait for user to press a key
+            setConsoleTextColor(7); 
+            _getch(); 
         }
-    } while (true); // Loop until the user chooses to exit
+    } while (true); 
 }
 
 // Function to display the table
@@ -880,14 +1020,13 @@ void displayTable(const vector<string>& salesMonths, const vector<double>& total
     // Create a table object
     Table salesTable;
 
-    // Add table headers with color
     salesTable.add_row({ "Sales Month", "Total Sales (RM)", "Sales Change (%)" });
 
     // Format headers with color
     salesTable[0].format()
         .font_color(Color::yellow) // Yellow text for headers
-        .font_style({ FontStyle::bold }) // Bold headers
-        .font_align(FontAlign::center); // Center-align headers
+        .font_style({ FontStyle::bold }) // Bold 
+        .font_align(FontAlign::center); 
 
     // Add table rows with color
     for (size_t i = 0; i < salesMonths.size(); ++i) {
@@ -897,25 +1036,24 @@ void displayTable(const vector<string>& salesMonths, const vector<double>& total
             percentageChanges[i]
             });
 
-        // Format rows with alternating colors
         if (i % 2 == 0) {
             salesTable[i + 1].format()
-                .font_color(Color::green) // Green text for even rows
-                .font_align(FontAlign::center); // Center-align text
+                .font_color(Color::green) 
+                .font_align(FontAlign::center); 
         }
         else {
             salesTable[i + 1].format()
-                .font_color(Color::cyan) // Cyan text for odd rows
-                .font_align(FontAlign::center); // Center-align text
+                .font_color(Color::cyan) 
+                .font_align(FontAlign::center); 
         }
     }
 
     // Format the table borders with color
     salesTable.format()
         .border_top("=").border_bottom("=").border_left("|").border_right("|").corner("+")
-        .border_color(Color::magenta) // Magenta borders
+        .border_color(Color::magenta) 
         .column_separator("|")
-        .font_align(FontAlign::center); // Center-align all text
+        .font_align(FontAlign::center); 
 
     // Print the table
     setConsoleTextColor(14); // Yellow color for the title
@@ -934,36 +1072,32 @@ void displayBarChart(const vector<string>& salesMonths, const vector<double>& to
         }
     }
 
-    // Print the bar chart header
     cout << "\n\t\t\t--- Monthly Sales Report ---\n";
     cout << "\t\tSales Chart (Total Sales represented by colored bars)\n\n";
 
-    // Print the bars
     for (size_t i = 0; i < salesMonths.size(); ++i) {
         // Calculate the number of blocks to represent sales
         int numBlocks = static_cast<int>((totalSales[i] / maxSales) * 50); // Max width of 50 chars
 
         // Print the month
-        setConsoleTextColor(14); // Yellow for month labels
+        setConsoleTextColor(14); 
         cout << setw(15) << salesMonths[i] << " | ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
-        // Print the bar with background color
-        setConsoleTextColor(176); // Green background, black text
+
+        setConsoleTextColor(176); 
         for (int j = 0; j < numBlocks; ++j) {
-            cout << " "; // Use spaces to create a solid bar
+            cout << " "; 
         }
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
         // Print the sales value
         cout << " RM" << fixed << setprecision(2) << totalSales[i] << endl;
 
         // Add space between bars
         cout << "                | ";
-        cout << endl; // Add a blank line after each bar
+        cout << endl; 
     }
-
-    // Print instructions
 }
 
 void Admin::MonthlySalesReport(MYSQL* conn) {
@@ -986,7 +1120,7 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
             try {
                 year = stoi(input);
                 if (year >= 2000 && year <= 2100) {
-                    break; // Valid year
+                    break; 
                 }
                 else {
                     setConsoleTextColor(12);
@@ -1025,7 +1159,7 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
             continue;
         }
 
-        // Vectors to hold months, sales, and percentage changes
+        // Vectors to hold months, sales, and percentage changes,pdsosa
         vector<string> salesMonths;
         vector<double> totalSales;
         vector<string> percentageChanges;
@@ -1095,10 +1229,10 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
                 showTable = false;
             }
             else if (choice == 'b') {
-                break; // Return to year input
+                break; 
             }
             else if (choice == 'q') {
-                return; // Exit the function
+                return;
             }
         }
     }
@@ -1107,14 +1241,13 @@ void Admin::MonthlySalesReport(MYSQL* conn) {
 void Admin::BookSalesReport(MYSQL* conn) {
     system("cls");
 
-    // Query to fetch book sales data
     string query = "SELECT b.Title AS Book_Title, "
-                   "SUM(bo.quantity) AS Total_Quantity_Sold, "
-                   "SUM(bo.price) AS Total_Sales "
-                   "FROM book_order bo "
-                   "JOIN book b ON bo.BookID = b.BookID "
-                   "GROUP BY b.BookID "
-                   "ORDER BY Total_Sales DESC;";
+        "SUM(bo.quantity) AS Total_Quantity_Sold, "
+        "SUM(bo.price) AS Total_Sales "
+        "FROM book_order bo "
+        "JOIN book b ON bo.BookID = b.BookID "
+        "GROUP BY b.BookID "
+        "ORDER BY Total_Sales DESC;";
 
     if (mysql_query(conn, query.c_str())) {
         cerr << "Query execution failed: " << mysql_error(conn) << endl;
@@ -1134,14 +1267,14 @@ void Admin::BookSalesReport(MYSQL* conn) {
     Table bookSalesTable;
     bookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales", "Popularity Percentage(%)" });
 
-    // First pass: Calculate total quantity sold for all books
+    //Calculate total quantity sold for all books
     MYSQL_ROW row;
     while ((row = mysql_fetch_row(result))) {
         int quantitySold = atoi(row[1]); // Total quantity sold for the book
         totalQuantitySoldForAllBooks += quantitySold; // Sum up the total quantity sold
     }
 
-    // Move the result pointer back to the beginning for the second pass
+    // Move the result pointer back to the beginning 
     mysql_data_seek(result, 0);
 
     // Second pass: Populate the table and calculate the popularity percentage based on quantity sold
@@ -1163,19 +1296,19 @@ void Admin::BookSalesReport(MYSQL* conn) {
         bookSalesTable.add_row({ bookTitle, std::to_string(quantitySold), salesStream.str(), percentageStream.str() });
     }
 
-    // Display the title and description above the table
-    setConsoleTextColor(14); // Yellow color for the title
+
+    setConsoleTextColor(14); // Yellow color 
     cout << "======================================================================\n";
     cout << "                     BOOK SALES PERFORMANCE REPORT         \n";
     cout << "======================================================================\n";
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
 
-    setConsoleTextColor(11); // Cyan color for the description
+    setConsoleTextColor(11);
     cout << "This report provides insights into the sales performance of books.\n";
-    cout << "It includes the total quantity sold, total sales revenue, and the\n";
-    cout << "popularity percentage of each book based on the total quantity sold.\n";
+    cout << "It includes the total quantity sold, total sales revenue,\n";
+    cout << "and the popularity percentage of each book based on the total quantity sold.\n";
     cout << "======================================================================\n";
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
 
     // Format and display the report table
     reportTableFormat(bookSalesTable);
@@ -1190,55 +1323,50 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
     while (true) {
         system("cls");
 
-        // Display the title and description
-        setConsoleTextColor(14); // Yellow color for the title
+        setConsoleTextColor(14); 
         cout << "===================================================================\n";
         cout << "              MONTHLY BOOK SALES REPORT             \n";
         cout << "===================================================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
-        setConsoleTextColor(11); // Cyan color for the description
+        setConsoleTextColor(11); 
         cout << "This report shows the total quantity sold and total sales revenue\n";
         cout << "for each book in the selected month.\n";
         cout << "===================================================================\n\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
         string month;
 
-        // Prompt for the month
-        setConsoleTextColor(14); // Yellow color for input prompt
+        setConsoleTextColor(14);
         cout << "Enter the month for the report (format: YYYY-MM) or 'B' to return to the report menu: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         cin >> month;
 
-        // Check if the user wants to go back to the report menu
         if (tolower(month[0]) == 'b') {
-            // Confirmation prompt for exit
-            setConsoleTextColor(12); // Red color for emphasis
+            setConsoleTextColor(12); 
             cout << "\nAre you sure you want to return to the report menu? (Y/N): ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             char confirm;
             cin >> confirm;
             if (tolower(confirm) == 'y') {
-                return; // Exit the function to return to the report menu
+                return; 
             }
             else {
-                continue; // Restart the loop
+                continue;
             }
         }
 
-        // Validate month format
+        // Validate month format,see workshop 1 sequel
         regex month_format("^\\d{4}-(0[1-9]|1[0-2])$");
         if (!regex_match(month, month_format)) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cerr << "Invalid month format. Please use YYYY-MM." << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7);
             cout << "\nPress any key to try again...";
             _getch();
-            continue; // Restart the loop to prompt again
+            continue; 
         }
 
-        // Query to fetch book sales data for the selected month
         string query = "SELECT b.Title AS Book_Title, "
             "SUM(bo.quantity) AS Total_Quantity_Sold, "
             "SUM(bo.price) AS Total_Sales "
@@ -1251,32 +1379,31 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
             "ORDER BY Total_Sales DESC;";
 
         if (mysql_query(conn, query.c_str())) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cerr << "Query execution failed: " << mysql_error(conn) << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             cout << "\nPress any key to try again...";
             _getch();
-            continue; // Restart the loop
+            continue; 
         }
 
         MYSQL_RES* result = mysql_store_result(conn);
         if (!result) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cerr << "Failed to store result: " << mysql_error(conn) << endl;
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             cout << "\nPress any key to try again...";
             _getch();
-            continue; // Restart the loop
+            continue; 
         }
 
         // Display the selected month
-        setConsoleTextColor(14); // Yellow color for emphasis
+        setConsoleTextColor(14); 
         cout << "\n===================================================================\n";
         cout << "              Book Sales Report for " << month << "\n";
         cout << "=====================================================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
-        // Display the results in a table format
         Table monthlyBookSalesTable;
         monthlyBookSalesTable.add_row({ "Book Title", "Total Quantity Sold", "Total Sales" });
 
@@ -1288,9 +1415,9 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
         }
 
         if (!hasData) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "No sales data found for the month " << month << ".\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
         else {
             reportTableFormat(monthlyBookSalesTable);
@@ -1300,15 +1427,15 @@ void Admin::BookSalesInMonth(MYSQL* conn) {
         mysql_free_result(result);
 
         // Provide an option to go back to the month input
-        setConsoleTextColor(14); // Yellow color for input prompt
+        setConsoleTextColor(14); 
         cout << "\nPress 'B' to input another month or any other key to return to the report menu...";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         char choice = _getch();
         if (tolower(choice) == 'b') {
-            continue; // Restart the loop for a new month input
+            continue; 
         }
         else {
-            break; // Exit the function to return to the report menu
+            break; // Exit the function 
         }
     }
 }
@@ -1317,6 +1444,7 @@ void Admin::ViewCustomerInfo(MYSQL* conn) {
     // Check if the connection to the database is successful
     if (conn == nullptr) {
         cout << "\033[1;31mError: Database connection failed!\033[0m" << endl;
+        (void)_getch();
         return; // Exit the function if connection failed
     }
 
@@ -1325,53 +1453,51 @@ void Admin::ViewCustomerInfo(MYSQL* conn) {
 
     while (continueSearching) {
         system("cls");
-        // Display the search menu with vibrant colors
         setConsoleTextColor(14); // Yellow for the title
         cout << "===================================================\n";
         cout << "              VIEW CUSTOMER INFORMATION            \n";
         cout << "===================================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
-        setConsoleTextColor(11); // Cyan for menu options
+        setConsoleTextColor(11); 
         cout << "\n1. View all customers\n";
         cout << "2. Search by Name\n";
         cout << "3. Search by Username\n";
         cout << "4. Search by Phone No\n";
         cout << "5. Search by Address\n";
-        cout << "0. Go back\n"; // Option to go back
-        setConsoleTextColor(7); // Reset to default color
+        cout << "0. Go back\n";
+        setConsoleTextColor(7); 
 
-        setConsoleTextColor(10); // Green for input prompt
+        setConsoleTextColor(10); 
         cout << "\nEnter your choice: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
-        // Validate the choice input
+
         if (!(cin >> choice)) {
             cin.clear();
             cin.ignore(1000, '\n');
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nInvalid input! Please enter a number between 0 and 5.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             this_thread::sleep_for(chrono::seconds(1));
-            continue; // Ask the user for input again
+            continue; 
         }
 
         // If user chooses 0, go back
         if (choice == 0) {
-            setConsoleTextColor(14); // Yellow for exit message
+            setConsoleTextColor(14);
             cout << "\nReturning to the previous menu...\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7);
             this_thread::sleep_for(chrono::seconds(1));
-            return; // Exit the search menu and go back to the previous menu
+            return; 
         }
 
-        // Check if the choice is within the valid range
         if (choice < 1 || choice > 5) {
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nInvalid choice! Please enter a number between 0 and 5.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7);
             this_thread::sleep_for(chrono::seconds(1));
-            continue; // Ask the user to input search criteria again
+            continue; 
         }
 
         cin.ignore();
@@ -1388,68 +1514,66 @@ void Admin::ViewCustomerInfo(MYSQL* conn) {
                 validSearch = true;
                 break;
             case 2:
-                setConsoleTextColor(11); // Cyan for input prompt
+                setConsoleTextColor(11); 
                 cout << "Enter Name to search: ";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 getline(cin, keyword);
                 searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Name LIKE '%" + keyword + "%'";
                 validSearch = true;
                 break;
             case 3:
-                setConsoleTextColor(11); // Cyan for input prompt
+                setConsoleTextColor(11); 
                 cout << "Enter Username to search: ";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 getline(cin, keyword);
                 searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND username LIKE '%" + keyword + "%'";
                 validSearch = true;
                 break;
             case 4:
-                setConsoleTextColor(11); // Cyan for input prompt
+                setConsoleTextColor(11);
                 cout << "Enter Phone No to search: ";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 getline(cin, keyword);
                 searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Phone_no LIKE '%" + keyword + "%'";
                 validSearch = true;
                 break;
             case 5:
-                setConsoleTextColor(11); // Cyan for input prompt
+                setConsoleTextColor(11); 
                 cout << "Enter Address to search: ";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 getline(cin, keyword);
                 searchQuery = "SELECT UserID, Name, IC_no, Phone_no, Address, username FROM USER WHERE Role='customer' AND Address LIKE '%" + keyword + "%'";
                 validSearch = true;
                 break;
             }
 
-            // Execute the query
+
             int qstate = mysql_query(conn, searchQuery.c_str());
 
             if (qstate) {
-                // If query execution fails, print error code and description
-                setConsoleTextColor(12); // Red for error message
+                setConsoleTextColor(12); 
                 cout << "\nQuery Execution Problem! Error Code: " << mysql_errno(conn) << " - " << mysql_error(conn) << "\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 _getch();
-                return; // Exit the function if the query fails
+                return; // Exit the function 
             }
 
             MYSQL_RES* res = mysql_store_result(conn);
             if (res == nullptr) {
-                setConsoleTextColor(12); // Red for error message
+                setConsoleTextColor(12); 
                 cout << "\nError fetching result. Error Code: " << mysql_errno(conn) << " - " << mysql_error(conn) << "\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 _getch();
                 return;
             }
 
-            // Check if there are any rows in the result set
             if (mysql_num_rows(res) == 0) {
-                setConsoleTextColor(12); // Red for error message
+                setConsoleTextColor(12); 
                 cout << "\nNo customers found matching the criteria. Please try again.\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
                 mysql_free_result(res);
                 this_thread::sleep_for(chrono::seconds(1));
-                continue; // Ask the user to input search criteria again
+                continue; 
             }
 
             // Prepare to display the results in a table format
@@ -1461,23 +1585,20 @@ void Admin::ViewCustomerInfo(MYSQL* conn) {
                 customerInformation.add_row({ row[0], row[1], row[2], row[3], row[4], row[5] });
             }
 
-            // Format the customer information and print it
+            
             customerTableFormat(customerInformation);
             cout << customerInformation << endl;
-
-            // Free the result memory
             mysql_free_result(res);
-
-            validSearch = true; // Exit the loop since the search was successful
+            validSearch = true;
         }
 
         // Prompt to continue or stop
-        setConsoleTextColor(11); // Cyan for input prompt
+        setConsoleTextColor(11); 
         cout << "\nWould you like to search again? (Y/N): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         char contChoice;
         cin >> contChoice;
-        cin.ignore(); // Clear the buffer after reading the char input
+        cin.ignore(); 
 
         if (contChoice == 'Y' || contChoice == 'y') {
             continueSearching = true;
@@ -1486,15 +1607,15 @@ void Admin::ViewCustomerInfo(MYSQL* conn) {
             continueSearching = false;
         }
         else {
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nInvalid input! Please enter Y or N.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
         }
     }
 
-    setConsoleTextColor(14); // Yellow for exit message
+    setConsoleTextColor(14); 
     cout << "\nPress Any Key To Go Back...";
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
     _getch();
 }
 
@@ -1519,7 +1640,6 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
             MYSQL_RES* res = mysql_store_result(conn);
             MYSQL_ROW row;
 
-            // Create a table to display the results
             Table customerOrdersTable;
             customerOrdersTable.add_row({ "User ID", "Phone No", "Name", "Username", "Total Completed Orders" });
             customerOrdersTable[0]
@@ -1548,13 +1668,12 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
             cout << "\033[1;31mQuery Execution Problem! Error Code: " << mysql_errno(conn) << "\033[0m" << endl;
         }
 
-        // Prompt the user to enter a Customer ID
-        cout << "Enter Customer ID to view completed orders (or enter 0 to go back): ";
+
+        cout << "\nEnter Customer ID to view completed orders (or enter 0 to go back): ";
         cin >> customerID;
 
-        // If the user enters 0, go back to the previous menu
         if (customerID == 0) {
-            continueSearching = false;  // Exit the loop and return to the previous menu
+            continueSearching = false;  
             break;
         }
 
@@ -1567,15 +1686,15 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
             if (mysql_num_rows(checkRes) == 0) {
                 cout << "\033[1;31mError: Customer ID " << customerID << " does not exist or is not a customer.\033[0m" << endl;
                 mysql_free_result(checkRes);
-                this_thread::sleep_for(chrono::seconds(2)); // Wait for 2 seconds before continuing
-                continue; // Skip the rest of the loop and prompt again
+                this_thread::sleep_for(chrono::seconds(2)); // Wait for 2 seconds 
+                continue; 
             }
             mysql_free_result(checkRes);
         }
         else {
             cout << "\033[1;31mQuery Execution Problem! Error Code: " << mysql_errno(conn) << "\033[0m" << endl;
-            this_thread::sleep_for(chrono::seconds(2)); // Wait for 2 seconds before continuing
-            continue; // Skip the rest of the loop and prompt again
+            this_thread::sleep_for(chrono::seconds(2)); 
+            continue; 
         }
 
         // Query to fetch order details for the given customer
@@ -1584,7 +1703,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
             "JOIN `book_order` bo ON o.orderID = bo.orderID "
             "JOIN `book` b ON bo.BookID = b.BookID "
             "WHERE o.UserID = " + to_string(customerID) + " AND o.orderStatus = 'completed' "
-            "ORDER BY o.orderID";
+            "ORDER BY o.orderID DESC";
 
         qstate = mysql_query(conn, query.c_str());
 
@@ -1594,7 +1713,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
 
             int currentOrderID = -1;
             Table orderTable;
-            int totalCompletedOrders = 0; // Variable to store the total number of completed orders
+            int totalCompletedOrders = 0; 
 
             while ((row = mysql_fetch_row(res))) {
                 int orderID = stoi(row[0]);
@@ -1606,7 +1725,7 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
                         cout << orderTable << "\n\n";
                     }
 
-                    cout << "+-------------------------------------------------------+\n";
+                    cout << "+-----------------------------------------------------------------------------+\n";
 
                     // Reset the table for the next order
                     orderTable = Table();
@@ -1626,7 +1745,6 @@ void Admin::ViewCustomerOrders(MYSQL* conn) {
                     cout << "Books in this order:\n";
                 }
 
-                // Add book information to the table
                 orderTable.add_row({
                     row[3],                 // Book Title
                     row[4],                 // Quantity
@@ -1720,44 +1838,44 @@ bool Admin::DisplayBooks(MYSQL* conn) {
 void Admin::SearchBooks(MYSQL* conn) {
     while (true) {
         system("cls");
-        setConsoleTextColor(14); // Yellow for the title
+        setConsoleTextColor(14); 
         cout << "===================================================\n";
         cout << "                    SEARCH BOOKS             \n";
         cout << "===================================================\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
         // Display menu options with colors
-        setConsoleTextColor(11); // Cyan for menu options
+        setConsoleTextColor(11); 
         cout << "\n1. Search by ISBN\n";
         cout << "2. Search by Book ID\n";
         cout << "3. Search by Title\n";
         cout << "4. Search by Author\n";
         cout << "5. Search by Publisher\n";
         cout << "6. Back to Admin Menu\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
         // Prompt for user input
-        setConsoleTextColor(10); // Green for input prompt
+        setConsoleTextColor(10); 
         cout << "\nEnter your choice: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
 
         int choice;
         if (!(cin >> choice) || choice < 1 || choice > 6) {
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12);
             cout << "\nInvalid input. Please enter a number between 1 and 6.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             cin.clear();
             cin.ignore(1000, '\n');
             _getch();
             continue;
         }
 
-        cin.ignore(1000, '\n'); // Clear the input buffer
+        cin.ignore(1000, '\n'); 
 
         if (choice == 6) {
-            setConsoleTextColor(14); // Yellow for exit message
+            setConsoleTextColor(14); 
             cout << "\nReturning to Admin Menu...\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             _getch();
             return;
         }
@@ -1766,37 +1884,37 @@ void Admin::SearchBooks(MYSQL* conn) {
         string query;
         switch (choice) {
         case 1: // Search by ISBN
-            setConsoleTextColor(11); // Cyan for input prompt
+            setConsoleTextColor(11); 
             cout << "\nEnter the ISBN to search: ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             getline(cin, keyword);
             query = "SELECT BookID, ISBN, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE ISBN LIKE '%" + keyword + "%'";
             break;
         case 2: // Search by Book ID
-            setConsoleTextColor(11); // Cyan for input prompt
+            setConsoleTextColor(11); 
             cout << "\nEnter the Book ID to search: ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             getline(cin, keyword);
             query = "SELECT BookID, ISBN, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE BookID LIKE '%" + keyword + "%'";
             break;
         case 3: // Search by Title
-            setConsoleTextColor(11); // Cyan for input prompt
+            setConsoleTextColor(11);
             cout << "\nEnter the Title to search: ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             getline(cin, keyword);
             query = "SELECT BookID, ISBN, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Title LIKE '%" + keyword + "%'";
             break;
         case 4: // Search by Author
-            setConsoleTextColor(11); // Cyan for input prompt
+            setConsoleTextColor(11); 
             cout << "\nEnter the Author to search: ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             getline(cin, keyword);
             query = "SELECT BookID, ISBN, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Author LIKE '%" + keyword + "%'";
             break;
-        case 5: // Search by Publisher
-            setConsoleTextColor(11); // Cyan for input prompt
+        case 5:
+            setConsoleTextColor(11); 
             cout << "\nEnter the Publisher to search: ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             getline(cin, keyword);
             query = "SELECT BookID, ISBN, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Publisher LIKE '%" + keyword + "%'";
             break;
@@ -1804,41 +1922,44 @@ void Admin::SearchBooks(MYSQL* conn) {
 
         const char* q = query.c_str();
         if (mysql_query(conn, q)) {
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nQuery Execution Problem! Error Code: " << mysql_errno(conn) << "\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             _getch();
             continue;
         }
 
         MYSQL_RES* res = mysql_store_result(conn);
         if (res == nullptr || mysql_num_rows(res) == 0) {
-            setConsoleTextColor(12); // Red for error message
+            setConsoleTextColor(12); 
             cout << "\nNo books found matching your criteria.\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             mysql_free_result(res);
             _getch();
             continue;
         }
-        system("cls");
-
-        cout << "\nBooks Found:\n";
-        Table table;
-        table.add_row({ "BookID", "ISBN", "Title", "Price", "Available Stock", "Author", "Publisher", "Published Year" });
 
         vector<MYSQL_ROW> rows;
         while (MYSQL_ROW row = mysql_fetch_row(res)) {
-            table.add_row({ row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7] });
             rows.push_back(row);
         }
 
-        cartTableFormat(table);
-        cout << table << endl;
-
         while (true) {
-            setConsoleTextColor(11); // Cyan for input prompt
+            system("cls");
+            cout << "\nBooks Found:\n";
+            Table table;
+            table.add_row({ "BookID", "ISBN", "Title", "Price", "Available Stock", "Author", "Publisher", "Published Year" });
+
+            for (const auto& row : rows) {
+                table.add_row({ row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7] });
+            }
+
+            cartTableFormat(table);
+            cout << table << endl;
+
+            setConsoleTextColor(11); 
             cout << "\nEnter the BookID of the book you want to manage (Press '0' to skip): ";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(7); 
             string selectedBookID;
             getline(cin, selectedBookID);
 
@@ -1850,7 +1971,7 @@ void Admin::SearchBooks(MYSQL* conn) {
             MYSQL_ROW selectedRow = nullptr;
 
             for (const auto& r : rows) {
-                if (r && selectedBookID == r[0]) { // Check BookID
+                if (r && selectedBookID == r[0]) {
                     validID = true;
                     selectedRow = r;
                     break;
@@ -1858,73 +1979,70 @@ void Admin::SearchBooks(MYSQL* conn) {
             }
 
             if (!validID) {
-                setConsoleTextColor(12); // Red for error message
+                setConsoleTextColor(12); 
                 cout << "\nInvalid BookID. Please try again.\n";
-                setConsoleTextColor(7); // Reset to default color
+                setConsoleTextColor(7); 
+                _getch();
                 continue;
             }
 
-            // Display selected book details
-            setConsoleTextColor(14); // Yellow for selected book
-            cout << "\nYou selected Book: " << selectedRow[2] << "\n"; // Display title
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(14); 
+            cout << "\nYou selected Book: " << selectedRow[2] << "\n";
+            setConsoleTextColor(7); 
 
             // Ask the user what they want to do with the selected book
             while (true) {
-                setConsoleTextColor(11); // Cyan for menu options
+                setConsoleTextColor(11);
                 cout << "What would you like to do with this book?\n";
                 cout << "1. Update Book\n";
                 cout << "2. Delete Book\n";
-                cout << "0. Back to Book Selection\n"; // Option to go back
-                setConsoleTextColor(7); // Reset to default color
+                cout << "0. Back to Book Selection\n"; 
+                setConsoleTextColor(7); 
 
-                setConsoleTextColor(10); // Green for input prompt
+                setConsoleTextColor(10); 
                 cout << "Enter your choice: ";
-                setConsoleTextColor(7); // Reset to default color
-
+                setConsoleTextColor(7); 
                 int action;
                 cin >> action;
-                cin.ignore(); // Clear the input buffer
+                cin.ignore(); 
 
                 if (action == 0) {
-                    break; // Go back to the book selection prompt
+                    break; 
                 }
 
                 switch (action) {
                 case 1:
-                    UpdateBooks(conn, selectedRow[0]); // Pass BookID to update function
-                    cin.ignore();
+                    UpdateBooks(conn, selectedRow[0]); 
                     break;
                 case 2:
-                    DeleteBooks(conn, selectedRow[0]); // Pass BookID to delete function
-                    cin.ignore();
+                    system("cls");
+                    DeleteBooks(conn, selectedRow[0]); 
                     break;
                 default:
-                    setConsoleTextColor(12); // Red for error message
+                    setConsoleTextColor(12); 
                     cout << "\nInvalid action!\n";
-                    setConsoleTextColor(7); // Reset to default color
+                    setConsoleTextColor(7); 
                     break;
                 }
-
                 break;
             }
         }
 
         mysql_free_result(res);
 
-        setConsoleTextColor(11); // Cyan for input prompt
+        setConsoleTextColor(11); 
         cout << "\nWould you like to search again? (y/n): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         char retryChoice;
         cin >> retryChoice;
-        cin.ignore(); // Clear the input buffer
+        cin.ignore();
 
         if (retryChoice == 'n' || retryChoice == 'N') {
-            setConsoleTextColor(14); // Yellow for exit message
-            cout << "\nReturning to Admin Menu...\n";
-            setConsoleTextColor(7); // Reset to default color
+            setConsoleTextColor(14); 
+            cout << "\nReturning to Book Management Menu...\n";
+            setConsoleTextColor(7); 
             this_thread::sleep_for(seconds(1));
-            return; // Exit the function
+            return; 
         }
     }
 }
@@ -1952,18 +2070,16 @@ void Admin::CustomerManagementMenu(MYSQL* conn) {
         cout << "\nEnter your choice: ";
         setConsoleTextColor(7); 
 
-        // Input validation
         if (!(cin >> choice) || choice < 0 || choice > 2) {
             setConsoleTextColor(12); 
             cout << "\n\033[1;31mInvalid input! Please enter a valid number between 0 and 2.\033[0m\n";
             setConsoleTextColor(7); 
             cin.clear(); 
             cin.ignore(10000, '\n');  
-            this_thread::sleep_for(chrono::seconds(1));  // Pause for 1 second
+            this_thread::sleep_for(chrono::seconds(1));  
             continue; 
         }
 
-        // Handle user choice
         switch (choice) {
         case 1:
             ViewCustomerInfo(conn);  // Function to search for customers
@@ -1972,10 +2088,10 @@ void Admin::CustomerManagementMenu(MYSQL* conn) {
             ViewCustomerOrders(conn);  // Function to view completed orders
             break;
         case 0:
-            setConsoleTextColor(14); // Yellow for exit message
+            setConsoleTextColor(14);
             cout << "\nReturning to Admin Menu...\n";
-            setConsoleTextColor(7); // Reset to default color
-            this_thread::sleep_for(chrono::seconds(1));  // Pause for 1 second
+            setConsoleTextColor(7); 
+            this_thread::sleep_for(chrono::seconds(1));  
             return;
         default:
             break;

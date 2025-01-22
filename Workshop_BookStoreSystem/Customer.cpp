@@ -2,18 +2,17 @@
 
 void Customer::CustomerRegistration(MYSQL* conn) {
     system("cls");
-    setConsoleTextColor(14); // Yellow color for the title
+    setConsoleTextColor(14); // Yellow color 
     cout << "=============================================" << endl;
     cout << "           CUSTOMER REGISTRATION             " << endl;
     cout << "=============================================" << endl;
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
 
-    // Displaying the message in a box with attention-grabbing color
-    setConsoleTextColor(11); // Cyan color for emphasis
+    setConsoleTextColor(11); 
     cout << "=========================================================" << endl;
     cout << "| You can press 'B' at any time to return to the menu.  |" << endl;
     cout << "=========================================================" << endl;
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
 
     auto confirmReturn = []() -> bool {
         while (true) {
@@ -34,7 +33,6 @@ void Customer::CustomerRegistration(MYSQL* conn) {
                 return false; // User declined
             }
             else {
-                // Handle invalid input
                 cout << "Invalid input. Please enter 'Y' for yes or 'N' for no." << endl;
                 cout << "Press any key to try again...";
                 cin.get();
@@ -43,27 +41,27 @@ void Customer::CustomerRegistration(MYSQL* conn) {
         };
 
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "Name: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         cin.ignore();
         getline(cin, name);
 
         if (name == "B" || name == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (name.empty()) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Name cannot be empty. Please enter a valid name." << endl;
             continue;
         }
 
         if (!regex_match(name, regex("^[A-Za-z\\s'-]+$"))) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12);
             cout << "Invalid name. Name can only contain letters, spaces, dashes (-), and apostrophes ('). Please try again." << endl;
             continue;
         }
@@ -72,79 +70,79 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     }
 
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "IC no(12 digits) [example:0102********]: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         getline(cin, ic_no);
 
         if (ic_no == "B" || ic_no == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (ic_no.length() == 12 && isNumeric(ic_no)) {
             break;
         }
 
-        setConsoleTextColor(12); // Red color for error message
+        setConsoleTextColor(12); 
         cout << "Invalid input. Please enter exactly 12 digits for IC no." << endl;
     }
 
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "Phone no (10 digits): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         getline(cin, phone_no);
 
         if (phone_no == "B" || phone_no == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (phone_no.length() == 10 && isNumeric(phone_no)) {
             break;
         }
 
-        setConsoleTextColor(12); // Red color for error message
+        setConsoleTextColor(12);
         cout << "Invalid input. Please enter only 10 numbers for Phone no." << endl;
     }
 
-    setConsoleTextColor(11); // Cyan color for input prompt
+    setConsoleTextColor(11); 
     cout << "Address: ";
-    setConsoleTextColor(7); // Reset to default color
+    setConsoleTextColor(7); 
     getline(cin, address);
 
     if (address == "B" || address == "b") {
         if (confirmReturn()) {
-            return; // Exit the function and return to menu
+            return; 
         }
     }
 
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "Username: ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         getline(cin, cus_username);
 
         if (cus_username == "B" || cus_username == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (cus_username.length() < 5) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Invalid input. Username must be at least 5 characters long." << endl;
             continue;
         }
 
         if (IsUsernameExists(cus_username)) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "This username is already taken. Please try a different one." << endl;
         }
         else {
@@ -154,20 +152,20 @@ void Customer::CustomerRegistration(MYSQL* conn) {
 
     string cus_password, confirmPassword;
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "Enter password (at least 6 characters, combination of letters and numbers): ";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
         cus_password = getHiddenInput(); // Use getHiddenInput() for password input
 
         if (cus_password == "B" || cus_password == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (cus_password.length() < 6 || !regex_match(cus_password, regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$"))) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Password must be at least 6 characters long and contain both letters and numbers. Please try again." << endl;
         }
         else {
@@ -177,24 +175,24 @@ void Customer::CustomerRegistration(MYSQL* conn) {
 
     // Ask the customer to confirm the password
     while (true) {
-        setConsoleTextColor(11); // Cyan color for input prompt
+        setConsoleTextColor(11); 
         cout << "Re-enter password to confirm: ";
-        setConsoleTextColor(7); // Reset to default color
-        confirmPassword = getHiddenInput(); // Use getHiddenInput() for password confirmation
+        setConsoleTextColor(7); 
+        confirmPassword = getHiddenInput(); 
 
         if (confirmPassword == "B" || confirmPassword == "b") {
             if (confirmReturn()) {
-                return; // Exit the function and return to menu
+                return; 
             }
-            continue; // Go back to the input prompt
+            continue; 
         }
 
         if (confirmPassword != cus_password) {
-            setConsoleTextColor(12); // Red color for error message
+            setConsoleTextColor(12); 
             cout << "Passwords do not match. Please try again." << endl;
         }
         else {
-            break; // Passwords match, proceed
+            break; 
         }
     }
 
@@ -209,17 +207,17 @@ void Customer::CustomerRegistration(MYSQL* conn) {
     int qstate = mysql_query(conn, q);
 
     if (!qstate) {
-        setConsoleTextColor(10); // Green color for success message
+        setConsoleTextColor(10); 
         cout << "\nCustomer registered successfully!\n";
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
     }
     else {
-        setConsoleTextColor(12); // Red color for error message
+        setConsoleTextColor(12); 
         cout << "Failed to register customer. Error Code: " << mysql_errno(conn) << endl;
-        setConsoleTextColor(7); // Reset to default color
+        setConsoleTextColor(7); 
     }
 
-    _getch(); // Wait for user input before returning
+    _getch(); 
 }
 
 void Customer::SetDBConnection(MYSQL* conn) {
@@ -247,7 +245,7 @@ void Customer::CustomerInterface() {
             username = row[0]; // Get the username from the result
         }
         else {
-            username = "Customer"; // Default value if no rows are returned
+            username = "Customer"; 
         }
         mysql_free_result(res);
     }
@@ -338,38 +336,46 @@ void Customer::CustomerInterface() {
     } while (true);
 }
 
-void Customer::ViewBooks()
-{
+void Customer::ViewBooks() {
     while (true) {
         system("cls");
         string query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book";
         const char* q = query.c_str();
 
+        // Execute the query
         if (mysql_query(conn, q)) {
-            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(12); 
+            cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(7); 
             _getch();
-            return;  // Exit the function in case of query failure
+            return; 
         }
 
         MYSQL_RES* res = mysql_store_result(conn);
 
         if (res == nullptr) {
-            cout << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(12); 
+            cerr << "Error fetching result set. Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(7); 
             _getch();
-            return;  // Exit the function in case of result fetch failure
+            return; 
         }
 
-        // Check if there are any rows in the result set
         if (mysql_num_rows(res) == 0) {
-            cout << "There is no book in the database." << endl;
+            setConsoleTextColor(12);
+            cout << "There are no books in the database." << endl;
+            setConsoleTextColor(7); 
             mysql_free_result(res);
             _getch();
-            return; // Exit the function if no books are found
+            return; 
         }
 
+        // Display the table header
+        setConsoleTextColor(14);
         cout << "===================================================================================" << endl;
         cout << "                              Books in the Database                                " << endl;
         cout << "===================================================================================" << endl << endl;
+        setConsoleTextColor(7); 
 
         Table viewBook;
         viewBook.add_row({ "BookID", "Title", "Price (RM)", "Available Stock", "Author", "Publisher", "Published Year" });
@@ -397,25 +403,44 @@ void Customer::ViewBooks()
         mysql_free_result(res);
 
         // Menu options for the user
+        setConsoleTextColor(11); // Cyan for menu options
         cout << "\n\n1. Choose books to order \n2. Search books \n3. Sort books \n4. Exit" << endl;
+        setConsoleTextColor(7); 
+
         int choice;
         cout << "Enter your choice: ";
         cin >> choice;
 
+        // Handle invalid input for choice
+        if (cin.fail()) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            setConsoleTextColor(12); 
+            cout << "Invalid input. Please enter a number between 1 and 4." << endl;
+            setConsoleTextColor(7); 
+            _getch();
+            continue;
+        }
+
         switch (choice) {
         case 1:
+            cin.ignore();
             ChooseBooksToOrder();
             break;
         case 2:
+            cin.ignore();
             SearchBooks();
             break;
         case 3:
+            cin.ignore();
             SortBooks();
             break;
         case 4:
             return; // Exit the loop
         default:
+            setConsoleTextColor(12); 
             cout << "Invalid choice. Please try again." << endl;
+            setConsoleTextColor(7); 
             _getch();
             break;
         }
@@ -481,7 +506,10 @@ void Customer::ChooseBooksToOrder() {
     const char* checkOrderQ = checkOrderQuery.c_str();
 
     if (mysql_query(conn, checkOrderQ)) {
-        cout << "Failed to check existing orders. Error Code: " << mysql_errno(conn) << endl;
+        setConsoleTextColor(12); // Red for error message
+        cerr << "Failed to check existing orders. Error Code: " << mysql_errno(conn) << endl;
+        setConsoleTextColor(7); // Reset to default color
+        _getch();
         return;
     }
 
@@ -499,9 +527,8 @@ void Customer::ChooseBooksToOrder() {
     }
 
     while (true) {
-        cout << "Enter the BookID of the book you want to order (or press 'Enter' to finish): ";
+        cout << "\n\nEnter the BookID of the book you want to order (or press 'Enter' to finish): ";
         string input;
-        cin.ignore();
         getline(cin, input); // Use getline to handle empty input
 
         if (input.empty()) {
@@ -512,23 +539,29 @@ void Customer::ChooseBooksToOrder() {
             bookID = stoi(input);
         }
         catch (...) {
+            setConsoleTextColor(12); // Red for error message
             cout << "Invalid input. Please enter a valid BookID or press 'Enter' to quit.\n" << endl;
+            setConsoleTextColor(7); // Reset to default color
             continue;
         }
 
-        // Check if the book exists and fetch its price and stock
-        string query = "SELECT Price, Stock FROM book WHERE BookID = " + to_string(bookID);
+        // Check if the book exists and fetch its price, stock, and title
+        string query = "SELECT Price, Stock, Title FROM book WHERE BookID = " + to_string(bookID);
         const char* q = query.c_str();
 
         if (mysql_query(conn, q)) {
-            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(12); // Red for error message
+            cerr << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(7); // Reset to default color
             continue;
         }
 
         res = mysql_store_result(conn);
 
         if (res == nullptr || mysql_num_rows(res) == 0) {
-            cout << "Book not found with the provided BookID\n." << endl;
+            setConsoleTextColor(12); // Red for error message
+            cout << "Book not found with the provided BookID.\n" << endl;
+            setConsoleTextColor(7); // Reset to default color
             mysql_free_result(res);
             continue;
         }
@@ -536,18 +569,41 @@ void Customer::ChooseBooksToOrder() {
         MYSQL_ROW row = mysql_fetch_row(res);
         price = atof(row[0]); // Get the price from the result
         stock = atoi(row[1]); // Get the stock from the result
+        string title = row[2]; // Get the title from the result
         mysql_free_result(res);
+
+        setConsoleTextColor(11); 
+        cout << "Book Details : "<<endl;
+        cout << "Book Title: " << title << endl;
+        cout << "Price: RM" << price << endl;
+        cout << "Stock Available: " << stock << endl;
+        setConsoleTextColor(7); 
 
         cout << "Enter the quantity (or '0' to cancel purchase): ";
         cin >> quantity;
 
+        if (cin.fail() || quantity < 0) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            setConsoleTextColor(12); // Red for error message
+            cout << "Invalid input. Please enter a non-negative number.\n" << endl;
+            setConsoleTextColor(7); // Reset to default color
+            continue;
+        }
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear the input buffer after reading quantity
+
         if (quantity == 0) {
+            setConsoleTextColor(12); // Red for cancellation message
             cout << "Purchase canceled for this book.\n" << endl;
+            setConsoleTextColor(7); // Reset to default color
             continue; // Skip to the next iteration of the loop
         }
 
         if (quantity > stock) {
+            setConsoleTextColor(12); // Red for error message
             cout << "Not enough stock available. Only " << stock << " items left.\n" << endl;
+            setConsoleTextColor(7); // Reset to default color
             continue;
         }
 
@@ -557,7 +613,9 @@ void Customer::ChooseBooksToOrder() {
             const char* orderQ = orderQuery.c_str();
 
             if (mysql_query(conn, orderQ)) {
-                cout << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
+                setConsoleTextColor(12); // Red for error message
+                cerr << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
+                setConsoleTextColor(7); // Reset to default color
                 return;
             }
 
@@ -581,10 +639,14 @@ void Customer::ChooseBooksToOrder() {
         const char* updateOrderQ = updateOrderQuery.c_str();
 
         if (mysql_query(conn, updateOrderQ)) {
-            cout << "Failed to update total amount for the order. Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(12); // Red for error message
+            cerr << "Failed to update total amount for the order. Error Code: " << mysql_errno(conn) << endl;
+            setConsoleTextColor(7); // Reset to default color
         }
         else {
-            cout << "Order completed successfully. Total Amount: RM" << totalAmount << endl<<endl;
+            setConsoleTextColor(10); // Green for success message
+            cout << "Order completed successfully. Total Amount: RM" << totalAmount << endl << endl;
+            setConsoleTextColor(7); // Reset to default color
         }
     }
 }
@@ -605,7 +667,7 @@ void Customer::SearchBooks() {
             cout << "Invalid input. Please enter a number between 1 and 5." << endl;
             (void)_getch();
             cin.clear(); // Clear the error flag
-            cin.ignore(1000, '\n'); // Ignore the invalid input
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore the invalid input
             continue;
         }
 
@@ -613,10 +675,10 @@ void Customer::SearchBooks() {
         if (choice < 1 || choice > 5) {
             cout << "Invalid choice. Please enter a number between 1 and 5." << endl;
             (void)_getch();
-            continue; 
+            continue;
         }
 
-        cin.ignore(1000,'\n');
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear the input buffer
 
         string keyword;
         string query;
@@ -646,7 +708,6 @@ void Customer::SearchBooks() {
         case 5:
             return; // Exit the function if the user chooses to go back
         }
-
 
         const char* q = query.c_str();
         if (mysql_query(conn, q)) {
@@ -683,7 +744,7 @@ void Customer::SearchBooks() {
             getline(cin, selectedBookID);
 
             if (selectedBookID.empty()) {
-                break; // Exit to search again
+                break; 
             }
 
             bool validID = false;
@@ -704,7 +765,8 @@ void Customer::SearchBooks() {
 
             // Fetch additional book details
             int bookID = stoi(selectedRow[0]);
-            double price = atof(selectedRow[2]); // Price should be at the correct index
+            string title = selectedRow[1]; // Get the title from the result
+            double price = atof(selectedRow[2]); // Get the price from the result
             int stock = 0;
 
             query = "SELECT Stock FROM book WHERE BookID = " + to_string(bookID);
@@ -725,6 +787,13 @@ void Customer::SearchBooks() {
                 continue;
             }
 
+            setConsoleTextColor(11); 
+            cout << "Book Details:\n";
+            cout << "Title: " << title << endl;
+            cout << "Price: RM" << fixed << setprecision(2) << price << endl;
+            cout << "Available Stock: " << stock << endl;
+            setConsoleTextColor(7);
+
             if (stock <= 0) {
                 cout << "Sorry, this book is out of stock.\n";
                 continue;
@@ -733,7 +802,15 @@ void Customer::SearchBooks() {
             int quantity;
             cout << "Enter the quantity (or '0' to cancel purchase): ";
             cin >> quantity;
-            cin.ignore(); // Clear the newline character
+
+            if (cin.fail() || quantity < 0) {
+                cin.clear(); // Clear the error flag
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+                cout << "Invalid input. Please enter a non-negative number.\n" << endl;
+                continue;
+            }
+
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear the input buffer
 
             if (quantity == 0) {
                 cout << "Purchase canceled for this book.\n" << endl;
@@ -747,7 +824,8 @@ void Customer::SearchBooks() {
 
             // Get or create order
             int orderID = 0;
-            query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
+            double totalAmount = 0.0; // Initialize totalAmount
+            query = "SELECT orderID, totalAmount FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
             if (mysql_query(conn, query.c_str())) {
                 cout << "Error checking pending order! Error Code: " << mysql_errno(conn) << endl;
                 continue;
@@ -757,21 +835,31 @@ void Customer::SearchBooks() {
             if (res && mysql_num_rows(res) > 0) {
                 MYSQL_ROW orderRow = mysql_fetch_row(res);
                 orderID = atoi(orderRow[0]);
+                totalAmount = atof(orderRow[1]); // Get the current total amount
                 mysql_free_result(res);
             }
             else {
                 mysql_free_result(res);
-                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(user_id) + ", 'pending')";
+                query = "INSERT INTO `order` (UserID, orderStatus, totalAmount,orderDate) VALUES (" + to_string(user_id) + ", 'pending', 0,CURDATE())";
                 if (mysql_query(conn, query.c_str())) {
                     cout << "Error creating new order! Error Code: " << mysql_errno(conn) << endl;
                     continue;
                 }
                 orderID = mysql_insert_id(conn);
+                totalAmount = 0.0; 
             }
 
             // Add or update the book in the order
             UpdateBookStock(bookID, quantity);
             AddOrUpdateBookInOrder(orderID, bookID, quantity, price);
+
+            // Update the total amount in the order
+            totalAmount += price * quantity;
+            query = "UPDATE `order` SET totalAmount = " + to_string(totalAmount) + " WHERE orderID = " + to_string(orderID);
+            if (mysql_query(conn, query.c_str())) {
+                cout << "Error updating total amount! Error Code: " << mysql_errno(conn) << endl;
+                continue;
+            }
             cout << "Book added to order successfully.\n";
         }
     }
@@ -787,47 +875,63 @@ void Customer::SortBooks() {
         cout << "1. Sort by Price\n2. Sort by Title\n3. Sort by Published Year\n4. Sort by Price Range\n5. Back to Main Menu" << endl;
         int choice;
         cout << "Enter your choice: ";
-        cin >> choice;
+
+        // Handle invalid input for choice
+        while (!(cin >> choice) || choice < 1 || choice > 5) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            cout << "Invalid choice. Please enter a number between 1 and 5: ";
+        }
 
         if (choice == 5) {
             return; // Exit the function
         }
-        //price range query
+
         string query;
         if (choice == 4) {
             double minPrice, maxPrice;
             cout << "Enter minimum price range: ";
+
+            // Handle invalid input for minimum price
             while (!(cin >> minPrice) || minPrice < 0) {
-                cout << "Please enter a valid positive number for minimum price range: ";
                 cin.clear();
-                cin.ignore(1000, '\n');
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Please enter a valid positive number for minimum price range: ";
             }
 
             cout << "Enter maximum price range: ";
+
+            // Handle invalid input for maximum price
             while (!(cin >> maxPrice) || maxPrice < minPrice) {
-                cout << "Please enter a valid positive number greater than minimum price for maximum price range: ";
                 cin.clear();
-                cin.ignore(1000, '\n');
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Please enter a valid positive number greater than minimum price for maximum price range: ";
             }
 
-            query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book WHERE Price BETWEEN " + to_string(minPrice) + " AND " + to_string(maxPrice) + " ORDER BY Price ASC";
+            query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book WHERE Price BETWEEN " + to_string(minPrice) + " AND " + to_string(maxPrice) + " ORDER BY Price ASC";
         }
         else {
             cout << "Choose sorting order:\n1. Ascending\n2. Descending" << endl;
             int orderChoice;
             cout << "Enter your choice: ";
-            cin >> orderChoice;
+
+            // Handle invalid input for sorting order
+            while (!(cin >> orderChoice) || orderChoice < 1 || orderChoice > 2) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid choice. Please enter 1 for Ascending or 2 for Descending: ";
+            }
 
             string order = (orderChoice == 2) ? "DESC" : "ASC";
 
             if (choice == 1) {
-                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY Price " + order;
+                query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book ORDER BY Price " + order;
             }
             else if (choice == 2) {
-                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY Title " + order;
+                query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book ORDER BY Title " + order;
             }
             else if (choice == 3) {
-                query = "SELECT BookID, Title, Price,Stock, Author, Publisher, PublishedYear FROM book ORDER BY PublishedYear " + order;
+                query = "SELECT BookID, Title, Price, Stock, Author, Publisher, PublishedYear FROM book ORDER BY PublishedYear " + order;
             }
             else {
                 cout << "Invalid choice. Please try again." << endl;
@@ -836,6 +940,21 @@ void Customer::SortBooks() {
             }
         }
 
+        // Execute the query
+        if (mysql_query(conn, query.c_str())) {
+            cerr << "Query failed: " << mysql_error(conn) << endl;
+            _getch();
+            continue;
+        }
+
+        MYSQL_RES* res = mysql_store_result(conn);
+        if (res == nullptr) {
+            cerr << "Failed to store result: " << mysql_error(conn) << endl;
+            _getch();
+            continue;
+        }
+
+
         const char* q = query.c_str();
         if (mysql_query(conn, q)) {
             cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
@@ -843,7 +962,7 @@ void Customer::SortBooks() {
             continue;
         }
 
-        MYSQL_RES* res = mysql_store_result(conn);
+        res = mysql_store_result(conn);
         if (res == nullptr || mysql_num_rows(res) == 0) {
             cout << "No books found." << endl;
             mysql_free_result(res);
@@ -865,10 +984,11 @@ void Customer::SortBooks() {
         cartTableFormat(sortedBook);
         cout << sortedBook << endl;
 
+
         while (true) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "\nEnter the BookID of the book you want to buy (Press 'Enter' to go back to Sorting Menu): ";
             string selectedBookID;
-            cin.ignore(1000, '\n');
             getline(cin, selectedBookID);
 
             if (selectedBookID.empty()) {
@@ -891,9 +1011,22 @@ void Customer::SortBooks() {
                 continue;
             }
 
+            setConsoleTextColor(11);
+            cout << "Book Details:\n";
+            cout << "Title: " << selectedRow[1] << endl;
+            cout << "Price: " << selectedRow[2] << endl;
+            cout << "Available Stock: " << selectedRow[3] << endl;
+            setConsoleTextColor(7);
+
             int quantity;
             cout << "Enter the quantity (or '0' to cancel purchase): ";
-            cin >> quantity;
+
+            // Handle invalid input for quantity
+            while (!(cin >> quantity) || quantity < 0) {
+                cin.clear(); // Clear the error flag
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+                cout << "Invalid input. Please enter a non-negative integer for quantity: ";
+            }
 
             if (quantity == 0) {
                 cout << "Purchase canceled for this book.\n" << endl;
@@ -939,7 +1072,7 @@ void Customer::SortBooks() {
             }
             else {
                 mysql_free_result(res);
-                query = "INSERT INTO `order` (UserID, orderStatus) VALUES (" + to_string(user_id) + ", 'pending')";
+                query = "INSERT INTO `order` (UserID, orderStatus, totalAmount,orderDate) VALUES (" + to_string(user_id) + ", 'pending', 0,CURDATE())";
                 const char* createOrderQuery = query.c_str();
                 if (mysql_query(conn, createOrderQuery)) {
                     cout << "Failed to create order. Error Code: " << mysql_errno(conn) << endl;
@@ -950,7 +1083,6 @@ void Customer::SortBooks() {
             mysql_free_result(res);
 
             UpdateBookStock(stoi(selectedBookID), quantity);
-            // Use addOrUpdateBookInOrder instead of direct insert
             AddOrUpdateBookInOrder(orderID, stoi(selectedBookID), quantity, price);
 
             string newTotalAmount = "UPDATE `order` SET totalAmount = totalAmount + " + to_string(price * quantity) + " WHERE orderID = " + to_string(orderID);
@@ -963,7 +1095,6 @@ void Customer::SortBooks() {
             cout << "Book added to cart successfully!" << endl;
         }
     }
-    _getch();
 }
 
 void Customer::OrderCart() {
@@ -1052,6 +1183,7 @@ void Customer::OrderCart() {
             ConfirmOrder();
             break;
         case 2:
+            cin.ignore();
             AdjustItemQuantity();
             break;
         case 3:
@@ -1064,116 +1196,126 @@ void Customer::OrderCart() {
 }
 
 void Customer::ConfirmOrder() {
-    system("cls");
-    cout << "===================================================================================\n";
-    cout << "                              Confirm Order                                        \n";
-    cout << "===================================================================================\n";
+    while (true) { // Loop to handle invalid input
+        system("cls");
+        cout << "===================================================================================\n";
+        cout << "                              Confirm Order                                        \n";
+        cout << "===================================================================================\n";
 
-    // Fetch the pending order ID for the current user
-    string query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
-    const char* q = query.c_str();
+        string query = "SELECT orderID FROM `order` WHERE UserID = " + to_string(user_id) + " AND orderStatus = 'pending'";
+        const char* q = query.c_str();
 
-    if (mysql_query(conn, q)) {
-        cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
-        _getch();
-        return;
-    }
+        if (mysql_query(conn, q)) {
+            cout << "Query Execution Problem! Error Code: " << mysql_errno(conn) << endl;
+            this_thread::sleep_for(seconds(1));
+            return;
+        }
 
-    MYSQL_RES* res = mysql_store_result(conn);
+        MYSQL_RES* res = mysql_store_result(conn);
 
-    if (res == nullptr || mysql_num_rows(res) == 0) {
-        cout << "You have no pending orders to confirm." << endl;
+        if (res == nullptr || mysql_num_rows(res) == 0) {
+            cout << "You have no pending orders to confirm." << endl;
+            mysql_free_result(res);
+            this_thread::sleep_for(seconds(1));
+            return;
+        }
+
+        MYSQL_ROW row = mysql_fetch_row(res);
+        int orderID = atoi(row[0]);
         mysql_free_result(res);
-        _getch();
-        return;
-    }
 
-    MYSQL_ROW row = mysql_fetch_row(res);
-    int orderID = atoi(row[0]);
-    mysql_free_result(res);
+        string cartQuery = "SELECT b.Title, bo.quantity, b.Price, (bo.quantity * b.Price) AS Total "
+            "FROM book_order bo "
+            "JOIN book b ON bo.BookID = b.BookID "
+            "WHERE bo.orderID = " + to_string(orderID);
+        const char* cartQ = cartQuery.c_str();
 
-    // Fetch and display the items in the order cart
-    string cartQuery = "SELECT b.Title, bo.quantity, b.Price, (bo.quantity * b.Price) AS Total "
-        "FROM book_order bo "
-        "JOIN book b ON bo.BookID = b.BookID "
-        "WHERE bo.orderID = " + to_string(orderID);
-    const char* cartQ = cartQuery.c_str();
+        if (mysql_query(conn, cartQ)) {
+            cout << "Failed to fetch order details. Error Code: " << mysql_errno(conn) << endl;
+            this_thread::sleep_for(seconds(1));
+            return;
+        }
 
-    if (mysql_query(conn, cartQ)) {
-        cout << "Failed to fetch order details. Error Code: " << mysql_errno(conn) << endl;
-        _getch();
-        return;
-    }
+        res = mysql_store_result(conn);
+        if (res == nullptr || mysql_num_rows(res) == 0) {
+            cout << "No items found in the order cart." << endl;
+            mysql_free_result(res);
+            this_thread::sleep_for(seconds(1));
+            return;
+        }
 
-    res = mysql_store_result(conn);
-    if (res == nullptr || mysql_num_rows(res) == 0) {
-        cout << "No items found in the order cart." << endl;
+        Table orderCartTable;
+        orderCartTable.add_row({ "Title", "Quantity", "Unit Price (RM)", "Total (RM)" });
+
+        double totalPrice = 0.0;
+        while ((row = mysql_fetch_row(res))) {
+            string title = row[0];
+            int quantity = atoi(row[1]);
+            double unitPrice = atof(row[2]);
+            double total = atof(row[3]);
+
+            ostringstream unitPriceStream, totalStream;
+            unitPriceStream << fixed << setprecision(2) << unitPrice;
+            totalStream << fixed << setprecision(2) << total;
+
+            orderCartTable.add_row({
+                title,
+                to_string(quantity),
+                unitPriceStream.str(),
+                totalStream.str()
+                });
+
+            totalPrice += total;
+        }
+
         mysql_free_result(res);
-        _getch();
-        return;
-    }
 
-    // Display the order cart items in a table
-    Table orderCartTable;
-    orderCartTable.add_row({ "Title", "Quantity", "Unit Price (RM)", "Total (RM)" });
-
-    double totalPrice = 0.0;
-    while ((row = mysql_fetch_row(res))) {
-        string title = row[0];
-        int quantity = atoi(row[1]);
-        double unitPrice = atof(row[2]);
-        double total = atof(row[3]);
-
-        ostringstream unitPriceStream, totalStream;
-        unitPriceStream << fixed << setprecision(2) << unitPrice;
-        totalStream << fixed << setprecision(2) << total;
-
+        ostringstream totalPriceStream;
+        totalPriceStream << fixed << setprecision(2) << totalPrice;
         orderCartTable.add_row({
-            title,
-            to_string(quantity),
-            unitPriceStream.str(),
-            totalStream.str()
+            "", "", "Total Price:", totalPriceStream.str()
             });
 
-        totalPrice += total;
-    }
+        cartTableFormat(orderCartTable);
 
-    mysql_free_result(res);
+        cout << orderCartTable << endl;
 
-    // Add total price row
-    ostringstream totalPriceStream;
-    totalPriceStream << fixed << setprecision(2) << totalPrice;
-    orderCartTable.add_row({
-        "", "", "Total Price:", totalPriceStream.str()
-        });
+        cout << "Are you sure you want to confirm your order? (1 for Yes, 0 for No): ";
+        int choice;
+        cin >> choice;
 
-    // Apply table formatting
-    cartTableFormat(orderCartTable);
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 for Yes or 0 for No." << endl;
+            this_thread::sleep_for(seconds(1));
+            continue; // Re-prompt the user for input
+        }
 
-    // Display the table
-    cout << orderCartTable << endl;
+        if (choice == 1) {
+            string updateQuery = "UPDATE `order` SET orderStatus = 'completed' WHERE orderID = " + to_string(orderID);
+            const char* updateQ = updateQuery.c_str();
 
-    // Ask for confirmation
-    cout << "Are you sure you want to confirm your order? (1 for Yes, 0 for No): ";
-    int choice;
-    cin >> choice;
-
-    if (choice == 1) {
-        string updateQuery = "UPDATE `order` SET orderStatus = 'completed' WHERE orderID = " + to_string(orderID);
-        const char* updateQ = updateQuery.c_str();
-
-        if (mysql_query(conn, updateQ)) {
-            cout << "Failed to confirm order. Error Code: " << mysql_errno(conn) << endl;
+            if (mysql_query(conn, updateQ)) {
+                cout << "Failed to confirm order. Error Code: " << mysql_errno(conn) << endl;
+            }
+            else {
+                cout << "Order confirmed successfully!" << endl;
+            }
+            this_thread::sleep_for(seconds(1));
+            return; // Exit the function after confirming the order
+        }
+        else if (choice == 0) {
+            cout << "Order confirmation canceled." << endl;
+            this_thread::sleep_for(seconds(1));
+            return; // Exit the function after canceling the order
         }
         else {
-            cout << "Order confirmed successfully!" << endl;
+            cout << "Invalid choice. Please enter 1 for Yes or 0 for No." << endl;
+            _getch();
+            continue; // Re-prompt the user for input
         }
     }
-    else {
-        cout << "Order confirmation canceled." << endl;
-    }
-
-    _getch();
 }
 
 void Customer::AdjustItemQuantity() {
@@ -1183,7 +1325,6 @@ void Customer::AdjustItemQuantity() {
         // Ask for the BookID
         cout << "\nEnter the BookID to adjust quantity (or press Enter to cancel): ";
         string bookIDInput;
-        cin.ignore();
         getline(cin, bookIDInput);  // Use getline to handle empty inputs as well.
 
         // Check if the user pressed Enter (empty input), cancel the operation and return to the order cart
@@ -1204,7 +1345,6 @@ void Customer::AdjustItemQuantity() {
 
         cout << "Enter the new quantity (0 to remove, or press Enter to cancel): ";
         string quantityInput;
-        cin.ignore(1000,'\n');
         getline(cin, quantityInput);  // Use getline to handle empty input for quantity.
 
         // If quantity input is empty, prompt user again to choose a BookID
@@ -1236,7 +1376,7 @@ void Customer::AdjustItemQuantity() {
 
         if (mysql_query(conn, checkQueryCStr)) {
             cout << "Failed to fetch book details. Error Code: " << mysql_errno(conn) << endl;
-            _getch();
+            this_thread::sleep_for(seconds(1));
             return;
         }
 
@@ -1244,7 +1384,7 @@ void Customer::AdjustItemQuantity() {
         if (res == nullptr || mysql_num_rows(res) == 0) {
             cout << "BookID not found in the order cart." << endl;
             mysql_free_result(res);
-            _getch();
+            this_thread::sleep_for(seconds(1));
             continue;  // Restart the loop if BookID is not found in the cart
         }
 
@@ -1338,7 +1478,7 @@ void Customer::AdjustItemQuantity() {
 
         if (continueInput.empty() || tolower(continueInput[0]) == 'n') {
             cout << "Returning to the order cart.\n";
-            _getch();
+            this_thread::sleep_for(seconds(1));
             return;  // Exit the loop and return to the order cart
         }
     }
