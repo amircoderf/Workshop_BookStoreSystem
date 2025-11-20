@@ -18,8 +18,6 @@ public:
     // Function to initialize connection
     void ConnectionFunction();
 
-    MYSQL* GetConnection(); // To retrieve conn pointer
-
     // Function to close the connection
     void CloseConnection();
 };

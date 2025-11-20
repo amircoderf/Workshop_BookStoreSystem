@@ -1,5 +1,4 @@
 #include "DBConnection.h"
-#include <iostream>
 
 void db_connection::ConnectionFunction() {
     conn = mysql_init(0);
@@ -16,11 +15,6 @@ void db_connection::ConnectionFunction() {
         cout << "Database Connection Failed "  << endl;
 
     this_thread::sleep_for(seconds(1));
-}
-
-
-MYSQL* db_connection::GetConnection() {
-    return conn;
 }
 
 //close the connection

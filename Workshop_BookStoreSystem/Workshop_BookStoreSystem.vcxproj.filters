@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="misc">
+      <UniqueIdentifier>{d6875447-baac-451b-aa20-8bb7bae4633c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -23,6 +26,24 @@
     </ClCompile>
     <ClCompile Include="DBConnection.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedFunc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Admin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libbcrypt-master\src\bcrypt.c">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libbcrypt-master\src\crypt_blowfish.c">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libbcrypt-master\src\crypt_gensalt.c">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libbcrypt-master\src\wrapper.c">
+      <Filter>misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -35,10 +56,10 @@
     <ClInclude Include="Customer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Util.h">
+    <ClInclude Include="Admin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Admin.h">
+    <ClInclude Include="SharedFunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
